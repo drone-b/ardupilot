@@ -1,0 +1,66 @@
+{
+  "component": "GPS",
+  "function": "GPS frontend with multiple protocol backends, receiver instance management, logging, RTC update and transport selection.",
+  "params": [
+    "GPS_NAVFILTER",
+    "GPS_AUTO_SWITCH",
+    "GPS_SBAS_MODE",
+    "GPS_MIN_ELEV",
+    "GPS_INJECT_TO",
+    "GPS_SBP_LOGMASK",
+    "GPS_RAW_DATA",
+    "GPS_SAVE_CFG",
+    "GPS_AUTO_CONFIG",
+    "GPS_BLEND_MASK",
+    "GPS_DRV_OPTIONS",
+    "GPS_PRIMARY",
+    "GPS1_TYPE",
+    "GPS1_GNSS_MODE",
+    "GPS1_RATE_MS",
+    "GPS1_POS_X",
+    "GPS1_POS_Y",
+    "GPS1_POS_Z",
+    "GPS1_DELAY_MS",
+    "GPS1_COM_PORT",
+    "GPS1_MB_TYPE",
+    "GPS1_CAN_NODEID",
+    "GPS1_CAN_OVRIDE",
+    "GPS2_TYPE",
+    "GPS2_GNSS_MODE",
+    "GPS2_RATE_MS",
+    "GPS2_POS_X",
+    "GPS2_POS_Y",
+    "GPS2_POS_Z",
+    "GPS2_DELAY_MS",
+    "GPS2_COM_PORT",
+    "GPS2_MB_TYPE",
+    "GPS2_CAN_NODEID",
+    "GPS2_CAN_OVRIDE"
+  ],
+  "param_prefixes": [
+    "GPS_",
+    "GPS1_",
+    "GPS2_"
+  ],
+  "modules": [
+    "libraries/AP_GPS/AP_GPS.cpp",
+    "libraries/AP_GPS/AP_GPS.h",
+    "libraries/AP_GPS/AP_GPS_Params.cpp",
+    "libraries/AP_GPS/MovingBase.cpp"
+  ],
+  "dependencies": [
+    "AP_SerialManager",
+    "AP_CANManager",
+    "AP_DroneCAN",
+    "AP_AHRS",
+    "AP_RTC",
+    "AP_Logger",
+    "AP_ExternalAHRS"
+  ],
+  "evidence": [
+    "AP_GPS.cpp includes AP_SerialManager, AP_CANManager, AP_DroneCAN, AP_AHRS, AP_RTC and AP_Logger.",
+    "ArduCopter/Parameters.cpp, ArduPlane/Parameters.cpp and Rover/Parameters.cpp expose the module with prefix GPS.",
+    "AP_GPS.cpp declares top-level parameters such as _NAVFILTER, _AUTO_CONFIG and _PRIMARY.",
+    "AP_GPS_Params.cpp declares per-instance parameters TYPE, GNSS_MODE, RATE_MS, POS, DELAY_MS, COM_PORT, MB_ and CAN_NODEID."
+  ]
+}

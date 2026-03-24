@@ -1,0 +1,626 @@
+{
+  "GPS_NAVFILTER": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Navigation filter engine setting for the GPS backend.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "GPS_AUTO_SWITCH": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Controls behavior when multiple GPS receivers are present.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "GPS_SBAS_MODE": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Enables, disables or preserves SBAS configuration in the GPS.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "GPS_MIN_ELEV": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Minimum satellite elevation accepted for navigation use.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "GPS_RAW_DATA": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Controls raw GPS data logging behavior.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "GPS_AUTO_CONFIG": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Enables automatic GPS backend configuration over serial and optionally DroneCAN.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "GPS_DRV_OPTIONS": {
+    "component": "GPS",
+    "module": "AP_GPS",
+    "description": "Backend specific driver option bitmask.",
+    "evidence": "libraries/AP_GPS/AP_GPS.cpp"
+  },
+  "INS_GYROFFS": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Gyro offset calibration group for the first IMU instance.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS_ACCOFFS": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Accelerometer offset calibration group for the first IMU instance.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS_FAST_SAMPLE": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Mask controlling fast IMU sampling.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS_ENABLE_MASK": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Mask used to enable or disable detected inertial sensor instances.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS_GYRO_RATE": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Fast sampling rate selection for gyro pipelines.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS_HNTCH_ENABLE": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Primary harmonic notch filter enable flag exposed through INS_HNTCH_ subgroup.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS_HNTCH_FREQ": {
+    "component": "IMU",
+    "module": "AP_InertialSensor",
+    "description": "Center frequency for the primary harmonic notch filter subgroup.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp"
+  },
+  "INS4_USE": {
+    "component": "IMU",
+    "module": "AP_InertialSensor_Params",
+    "description": "Per-instance enable flag for the first parameterized extended IMU slot exposed as INS4_*.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp,libraries/AP_InertialSensor/AP_InertialSensor_Params.cpp"
+  },
+  "INS4_ACC_ID": {
+    "component": "IMU",
+    "module": "AP_InertialSensor_Params",
+    "description": "Accelerometer device identifier for the INS4_* per-instance group.",
+    "evidence": "libraries/AP_InertialSensor/AP_InertialSensor.cpp,libraries/AP_InertialSensor/AP_InertialSensor_Params.cpp"
+  },
+  "BARO_GND_TEMP": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "User-provided ambient temperature used by barometric altitude calculations.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_ALT_OFFSET": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "Altitude offset added to barometric altitude.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_PRIMARY": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "Selects the primary barometer instance.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_EXT_BUS": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "Selects which external I2C bus is probed for a barometer.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_FLTR_RNG": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "Acceptance range for new barometer samples around the average.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_PROBE_EXT": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "Bitmask of external barometer types to probe.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_FIELD_ELV": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "User-provided field elevation used when disarmed.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "BARO_ALTERR_MAX": {
+    "component": "Barometer",
+    "module": "AP_Baro",
+    "description": "Maximum acceptable disagreement between GPS altitude and pressure altitude during arming checks.",
+    "evidence": "libraries/AP_Baro/AP_Baro.cpp"
+  },
+  "MOT_PWM_TYPE": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Selects the motor output protocol or PWM mode.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_PWM_MIN": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Minimum PWM value used for motor outputs.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_PWM_MAX": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Maximum PWM value used for motor outputs.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_THST_EXPO": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Thrust curve exponent used by multicopter motor linearization.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_SPIN_MIN": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Normalized thrust point where motors start producing useful thrust.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_SPIN_ARM": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Normalized motor spin level used while armed before full thrust is requested.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_THST_HOVER": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Estimated normalized thrust required to hover.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_HOVER_LEARN": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Controls automatic learning and saving of hover thrust.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_BAT_IDX": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Selects which battery monitor instance feeds motor compensation.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "MOT_OPTIONS": {
+    "component": "Motors",
+    "module": "AP_MotorsMulticopter",
+    "description": "Motor option bitmask.",
+    "evidence": "libraries/AP_Motors/AP_MotorsMulticopter.cpp"
+  },
+  "SERVO1_MIN": {
+    "component": "Servos",
+    "module": "SRV_Channel",
+    "description": "Minimum output value for the first servo channel. Pattern repeats across channels.",
+    "evidence": "libraries/SRV_Channel/SRV_Channel.cpp,libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "SERVO1_MAX": {
+    "component": "Servos",
+    "module": "SRV_Channel",
+    "description": "Maximum output value for the first servo channel. Pattern repeats across channels.",
+    "evidence": "libraries/SRV_Channel/SRV_Channel.cpp,libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "SERVO1_TRIM": {
+    "component": "Servos",
+    "module": "SRV_Channel",
+    "description": "Trim output for the first servo channel. Pattern repeats across channels.",
+    "evidence": "libraries/SRV_Channel/SRV_Channel.cpp,libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "SERVO1_REVERSED": {
+    "component": "Servos",
+    "module": "SRV_Channel",
+    "description": "Reversal flag for the first servo channel. Pattern repeats across channels.",
+    "evidence": "libraries/SRV_Channel/SRV_Channel.cpp,libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "SERVO1_FUNCTION": {
+    "component": "Servos",
+    "module": "SRV_Channel",
+    "description": "Assigned function for the first servo channel. Pattern repeats across channels.",
+    "evidence": "libraries/SRV_Channel/SRV_Channel.cpp,libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "SERVO_DSHOT_RATE": {
+    "component": "Servos",
+    "module": "SRV_Channels",
+    "description": "Global DShot update rate setting for servo outputs.",
+    "evidence": "libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "SERVO_DSHOT_ESC": {
+    "component": "Servos",
+    "module": "SRV_Channels",
+    "description": "Selected DShot ESC type.",
+    "evidence": "libraries/SRV_Channel/SRV_Channels.cpp"
+  },
+  "EK2_ENABLE": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Enables the EKF2 estimator backend.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_GPS_TYPE": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Controls how GPS measurements are fused by EKF2.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_ALT_SOURCE": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Selects the primary altitude source for EKF2.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_MAG_CAL": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Determines the default magnetometer fusion strategy.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_IMU_MASK": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Selects which IMU lanes can be used by EKF2 cores.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_GPS_CHECK": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Bitmask of GPS quality checks applied by EKF2.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_RNG_USE_HGT": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Controls switching to rangefinder as a height source near ground.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_FLOW_USE": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Selects when optical flow is used by EKF2.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_GSF_RUN_MASK": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Selects which lanes run the GSF yaw estimator.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK2_GSF_USE_MASK": {
+    "component": "EKF2",
+    "module": "NavEKF2",
+    "description": "Selects which lanes may use the GSF yaw estimator result.",
+    "evidence": "libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "EK3_ENABLE": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Enables the EKF3 estimator backend.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_VELNE_M_NSE": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "GPS horizontal velocity measurement noise lower bound used by EKF3.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_ALT_M_NSE": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Altitude measurement noise used by EKF3 for height fusion.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_MAG_CAL": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Default magnetometer fusion mode for EKF3.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_IMU_MASK": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Selects which IMU lanes EKF3 may use.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_GPS_CHECK": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Bitmask of GPS quality checks applied by EKF3.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_FLOW_USE": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Controls when optical flow is used by EKF3.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_GSF_RUN_MASK": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Selects which EKF3 lanes run the GSF yaw estimator.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_GSF_USE_MASK": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Selects which EKF3 lanes may use the GSF yaw estimator result.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_ERR_THRESH": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Error threshold parameter used by EKF3 lane management.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_AFFINITY": {
+    "component": "EKF3",
+    "module": "NavEKF3",
+    "description": "Lane affinity configuration parameter for EKF3.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_SRC1_POSXY": {
+    "component": "EKF3",
+    "module": "AP_NavEKF_Source",
+    "description": "Source selector for horizontal position in EKF3 source set 1.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_SRC1_VELXY": {
+    "component": "EKF3",
+    "module": "AP_NavEKF_Source",
+    "description": "Source selector for horizontal velocity in EKF3 source set 1.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_SRC1_POSZ": {
+    "component": "EKF3",
+    "module": "AP_NavEKF_Source",
+    "description": "Source selector for vertical position in EKF3 source set 1.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "EK3_SRC1_YAW": {
+    "component": "EKF3",
+    "module": "AP_NavEKF_Source",
+    "description": "Source selector for yaw in EKF3 source set 1.",
+    "evidence": "libraries/AP_NavEKF3/AP_NavEKF3.cpp"
+  },
+  "ATC_RATE_FF_ENAB": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Enables or disables body-frame rate feedforward.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ANGLE_BOOST": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Adds throttle boost as lean angle increases.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ANG_RLL_P": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Roll angle controller proportional gain.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ANG_PIT_P": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Pitch angle controller proportional gain.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ANG_YAW_P": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Yaw angle controller proportional gain.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_INPUT_TC": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Input time constant used for attitude target shaping.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ANGLE_MAX": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Maximum lean angle used across flight modes.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_RATE_WPY_MAX": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Maximum yaw target slew rate for autonomous modes.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ACC_R_MAX": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Maximum roll acceleration target.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ACC_P_MAX": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Maximum pitch acceleration target.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "ATC_ACC_Y_MAX": {
+    "component": "AttitudeControl",
+    "module": "AC_AttitudeControl",
+    "description": "Maximum yaw acceleration target.",
+    "evidence": "libraries/AC_AttitudeControl/AC_AttitudeControl.cpp"
+  },
+  "AHRS_EKF_TYPE": {
+    "component": "AHRS",
+    "module": "AP_AHRS",
+    "description": "Vehicle-level selector that decides which EKF backend is used for flight control.",
+    "evidence": "libraries/AP_AHRS/AP_AHRS.h,libraries/AP_NavEKF2/AP_NavEKF2.cpp"
+  },
+  "BATT_MONITOR": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Selects the battery monitor backend type for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_CAPACITY": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Configured full battery capacity in mAh for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_SERIAL_NUM": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Battery serial number or DroneCAN battery_id for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_LOW_TIMER": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Timeout before low-voltage failsafe is triggered.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_FS_VOLTSRC": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Chooses raw or sag-compensated voltage for battery failsafe checks.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_LOW_VOLT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Low battery voltage threshold for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_LOW_MAH": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Low remaining capacity threshold for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_CRT_VOLT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Critical battery voltage threshold for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_CRT_MAH": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Critical remaining capacity threshold for the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_FS_LOW_ACT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Vehicle action to perform on low battery failsafe.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_FS_CRT_ACT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Vehicle action to perform on critical battery failsafe.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_ARM_VOLT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Minimum voltage required for arming.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_ARM_MAH": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Minimum remaining capacity required for arming.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_OPTIONS": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Battery monitor behavior option bitmask.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_ESC_INDEX": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "ESC telemetry index used for outbound battery data mirroring.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  },
+  "BATT_VOLT_PIN": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Analog",
+    "description": "Analog pin used to read battery voltage on the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Analog.cpp"
+  },
+  "BATT_CURR_PIN": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Analog",
+    "description": "Analog pin used to read battery current on the primary battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Analog.cpp"
+  },
+  "BATT_VOLT_MULT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Analog",
+    "description": "Voltage multiplier used by the analog battery backend.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Analog.cpp"
+  },
+  "BATT_AMP_PERVLT": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Analog",
+    "description": "Current-per-volt scaling used by the analog battery backend.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Analog.cpp"
+  },
+  "BATT_AMP_OFFSET": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Analog",
+    "description": "Current offset used by the analog battery backend.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Analog.cpp"
+  },
+  "BATT_SUM_MASK": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Sum",
+    "description": "Monitor selection mask for sum battery monitors.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_Sum.cpp"
+  },
+  "BATT_ESC_MASK": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_ESC",
+    "description": "ESC selection mask used by the ESC battery backend.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor_ESC.cpp"
+  },
+  "SERIAL0_BAUD": {
+    "component": "Serial",
+    "module": "AP_SerialManager",
+    "description": "Baud rate for serial port 0 exposed at vehicle parameter level.",
+    "evidence": "Rover/Parameters.cpp"
+  },
+  "SERIAL1_BAUD": {
+    "component": "Serial",
+    "module": "AP_SerialManager",
+    "description": "Baud rate for serial port 1 exposed at vehicle parameter level.",
+    "evidence": "Rover/Parameters.cpp"
+  },
+  "SERIAL2_BAUD": {
+    "component": "Serial",
+    "module": "AP_SerialManager",
+    "description": "Baud rate for serial port 2 exposed at vehicle parameter level.",
+    "evidence": "Rover/Parameters.cpp"
+  },
+  "BATT2_MONITOR": {
+    "component": "Battery",
+    "module": "AP_BattMonitor_Params",
+    "description": "Selects the battery monitor backend type for the second battery instance.",
+    "evidence": "libraries/AP_BattMonitor/AP_BattMonitor.cpp,libraries/AP_BattMonitor/AP_BattMonitor_Params.cpp"
+  }
+}

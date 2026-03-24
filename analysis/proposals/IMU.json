@@ -1,0 +1,68 @@
+{
+  "component": "IMU",
+  "function": "Inertial sensor frontend for gyro and accelerometer discovery, calibration, per-instance selection, fast sampling and notch-related processing.",
+  "params": [
+    "INS_GYROFFS_X",
+    "INS_GYROFFS_Y",
+    "INS_GYROFFS_Z",
+    "INS_ACCSCAL_X",
+    "INS_ACCSCAL_Y",
+    "INS_ACCSCAL_Z",
+    "INS_ACCOFFS_X",
+    "INS_ACCOFFS_Y",
+    "INS_ACCOFFS_Z",
+    "INS_GYR_ID",
+    "INS_ACC_ID",
+    "INS_FAST_SAMPLE",
+    "INS_ENABLE_MASK",
+    "INS_GYRO_RATE",
+    "INS_LOG_BAT_CNT",
+    "INS_LOG_BAT_MASK",
+    "INS_LOG_BAT_OPT",
+    "INS_LOG_BAT_LGIN",
+    "INS_LOG_BAT_LGCT",
+    "INS_HNTCH_ENABLE",
+    "INS_HNTCH_FREQ",
+    "INS_HNTCH_BW",
+    "INS_HNTCH_MODE",
+    "INS_HNTCH_REF",
+    "INS_TCAL1_ENABLE",
+    "INS_TCAL_OPTIONS",
+    "INS4_USE",
+    "INS4_ACC_ID",
+    "INS4_ACCSCAL_X",
+    "INS4_ACCOFFS_X",
+    "INS4_GYR_ID",
+    "INS4_GYROFFS_X"
+  ],
+  "param_prefixes": [
+    "INS_",
+    "INS4_",
+    "INS_LOG_",
+    "INS_HNTCH_",
+    "INS_TCAL1_"
+  ],
+  "modules": [
+    "libraries/AP_InertialSensor/AP_InertialSensor.cpp",
+    "libraries/AP_InertialSensor/AP_InertialSensor.h",
+    "libraries/AP_InertialSensor/AP_InertialSensor_Params.cpp",
+    "libraries/AP_InertialSensor/BatchSampler.cpp",
+    "libraries/AP_InertialSensor/AP_InertialSensor_tempcal.cpp"
+  ],
+  "dependencies": [
+    "AP_AHRS",
+    "AP_AHRS_View",
+    "AP_ExternalAHRS",
+    "AP_GyroFFT",
+    "AP_Motors_Class",
+    "AP_Scheduler",
+    "AP_HAL"
+  ],
+  "evidence": [
+    "AP_InertialSensor.cpp includes AP_AHRS, AP_AHRS_View, AP_ExternalAHRS, AP_GyroFFT, AP_Motors_Class and AP_Scheduler.",
+    "ArduCopter/Parameters.cpp, ArduPlane/Parameters.cpp and Rover/Parameters.cpp expose the module with prefix INS.",
+    "AP_InertialSensor.cpp declares root parameters such as _GYROFFS, _ACCOFFS, _FAST_SAMPLE, _ENABLE_MASK and _GYRO_RATE.",
+    "BatchSampler.cpp declares BAT_CNT, BAT_MASK, BAT_OPT, BAT_LGIN and BAT_LGCT under the INS_LOG_ subgroup.",
+    "AP_InertialSensor.cpp declares subgroup prefixes _HNTCH_ and _TCAL1_ and instance subgroup 4_ that expands to INS4_*."
+  ]
+}

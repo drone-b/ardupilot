@@ -1,0 +1,456 @@
+{
+  "GPS": {
+    "category": "sensor",
+    "params": [
+      "GPS_NAVFILTER",
+      "GPS_AUTO_SWITCH",
+      "GPS_SBAS_MODE",
+      "GPS_MIN_ELEV",
+      "GPS_INJECT_TO",
+      "GPS_RAW_DATA",
+      "GPS_SAVE_CFG",
+      "GPS_AUTO_CONFIG",
+      "GPS_DRV_OPTIONS"
+    ],
+    "param_prefixes": [
+      "GPS_"
+    ],
+    "modules": [
+      "libraries/AP_GPS"
+    ],
+    "dependencies": [
+      "SERIAL",
+      "CAN",
+      "AHRS",
+      "RTC"
+    ],
+    "capabilities": [
+      "positioning",
+      "velocity estimation",
+      "time reference",
+      "rtk and moving baseline support"
+    ],
+    "config_flow": [
+      "Select transport and backend type",
+      "Enable auto configuration or save behavior if desired",
+      "Validate fix quality before EKF relies on GPS"
+    ]
+  },
+  "IMU": {
+    "category": "sensor",
+    "params": [
+      "INS_GYROFFS",
+      "INS_ACCOFFS",
+      "INS_FAST_SAMPLE",
+      "INS_ENABLE_MASK",
+      "INS_GYRO_RATE",
+      "INS_HNTCH_ENABLE",
+      "INS_HNTCH_FREQ",
+      "INS_HNTCH_BW",
+      "INS4_USE",
+      "INS4_ACC_ID"
+    ],
+    "param_prefixes": [
+      "INS_"
+    ],
+    "modules": [
+      "libraries/AP_InertialSensor"
+    ],
+    "dependencies": [
+      "AHRS",
+      "MOTORS"
+    ],
+    "capabilities": [
+      "angular rate sensing",
+      "linear acceleration sensing",
+      "vibration tracking",
+      "notch filter control inputs"
+    ],
+    "config_flow": [
+      "Probe and identify enabled accelerometer and gyro instances",
+      "Run gyro and accel calibration",
+      "Configure fast sampling and optional harmonic notch tracking before EKF tuning"
+    ]
+  },
+  "Barometer": {
+    "category": "sensor",
+    "params": [
+      "BARO_GND_TEMP",
+      "BARO_ALT_OFFSET",
+      "BARO_PRIMARY",
+      "BARO_EXT_BUS",
+      "BARO_FLTR_RNG",
+      "BARO_PROBE_EXT",
+      "BARO_FIELD_ELV",
+      "BARO_ALTERR_MAX",
+      "BARO_OPTIONS"
+    ],
+    "param_prefixes": [
+      "BARO_"
+    ],
+    "modules": [
+      "libraries/AP_Baro"
+    ],
+    "dependencies": [
+      "CAN",
+      "AIRSPEED",
+      "GPS",
+      "MOTORS"
+    ],
+    "capabilities": [
+      "pressure altitude",
+      "height datum",
+      "arming consistency checks"
+    ],
+    "config_flow": [
+      "Select primary or external barometer if multiple devices exist",
+      "Calibrate barometer before altitude consumers use it",
+      "Use as EKF fallback even when another altitude source is selected"
+    ]
+  },
+  "Motors": {
+    "category": "actuator",
+    "params": [
+      "MOT_YAW_HEADROOM",
+      "MOT_THST_EXPO",
+      "MOT_SPIN_MAX",
+      "MOT_BAT_VOLT_MAX",
+      "MOT_BAT_VOLT_MIN",
+      "MOT_BAT_CURR_MAX",
+      "MOT_PWM_TYPE",
+      "MOT_PWM_MIN",
+      "MOT_PWM_MAX",
+      "MOT_SPIN_MIN",
+      "MOT_SPIN_ARM",
+      "MOT_THST_HOVER",
+      "MOT_HOVER_LEARN",
+      "MOT_BAT_IDX",
+      "MOT_OPTIONS"
+    ],
+    "param_prefixes": [
+      "MOT_",
+      "H_",
+      "Q_M_"
+    ],
+    "modules": [
+      "libraries/AP_Motors"
+    ],
+    "dependencies": [
+      "SERVO",
+      "BATTERY",
+      "FRAME_CLASS",
+      "ATTITUDE_CONTROL"
+    ],
+    "capabilities": [
+      "thrust generation",
+      "spool state management",
+      "battery compensation",
+      "motor output shaping"
+    ],
+    "config_flow": [
+      "Instantiate frame-specific motor implementation",
+      "Bind servo outputs and PWM protocol",
+      "Set battery compensation and hover related values before flight tuning"
+    ]
+  },
+  "Servos": {
+    "category": "actuator",
+    "params": [
+      "SERVO1_MIN",
+      "SERVO1_MAX",
+      "SERVO1_TRIM",
+      "SERVO1_REVERSED",
+      "SERVO1_FUNCTION",
+      "SERVO_DSHOT_RATE",
+      "SERVO_DSHOT_ESC",
+      "SERVO_GPIO_MASK",
+      "SERVO_RC_FS_MSK"
+    ],
+    "param_prefixes": [
+      "SERVO"
+    ],
+    "modules": [
+      "libraries/SRV_Channel"
+    ],
+    "dependencies": [
+      "MOTORS",
+      "RC_INPUT",
+      "VEHICLE_MODE"
+    ],
+    "capabilities": [
+      "output routing",
+      "servo endpoint management",
+      "function assignment",
+      "dshot and digital servo support"
+    ],
+    "config_flow": [
+      "Assign output functions per channel",
+      "Set limits and trim",
+      "Ensure motor-related functions are consistent with selected frame"
+    ]
+  },
+  "EKF2": {
+    "category": "system",
+    "params": [
+      "EK2_ENABLE",
+      "EK2_GPS_TYPE",
+      "EK2_ALT_SOURCE",
+      "EK2_MAG_CAL",
+      "EK2_IMU_MASK",
+      "EK2_GPS_CHECK",
+      "EK2_RNG_USE_HGT",
+      "EK2_FLOW_USE",
+      "EK2_GSF_RUN_MASK",
+      "EK2_GSF_USE_MASK",
+      "EK2_OPTIONS"
+    ],
+    "param_prefixes": [
+      "EK2_"
+    ],
+    "modules": [
+      "libraries/AP_NavEKF2",
+      "libraries/AP_AHRS"
+    ],
+    "dependencies": [
+      "IMU",
+      "GPS",
+      "Barometer",
+      "Compass",
+      "RangeFinder",
+      "OpticalFlow",
+      "Airspeed",
+      "Beacon",
+      "VisualOdom",
+      "WheelEncoder",
+      "AHRS"
+    ],
+    "capabilities": [
+      "state estimation",
+      "origin management",
+      "sensor fusion",
+      "health and innovation checks"
+    ],
+    "config_flow": [
+      "Enable EKF2 and select it from AHRS_EKF_TYPE when needed",
+      "Choose active IMU lanes and altitude source",
+      "Only becomes trustworthy after source sensors are configured and healthy"
+    ]
+  },
+  "EKF3": {
+    "category": "system",
+    "params": [
+      "EK3_ENABLE",
+      "EK3_VELNE_M_NSE",
+      "EK3_ALT_M_NSE",
+      "EK3_MAG_CAL",
+      "EK3_IMU_MASK",
+      "EK3_GPS_CHECK",
+      "EK3_FLOW_USE",
+      "EK3_GSF_RUN_MASK",
+      "EK3_GSF_USE_MASK",
+      "EK3_ERR_THRESH",
+      "EK3_AFFINITY",
+      "EK3_SRC1_POSXY",
+      "EK3_SRC1_VELXY",
+      "EK3_SRC1_POSZ",
+      "EK3_SRC1_YAW"
+    ],
+    "param_prefixes": [
+      "EK3_"
+    ],
+    "modules": [
+      "libraries/AP_NavEKF3",
+      "libraries/AP_AHRS"
+    ],
+    "dependencies": [
+      "IMU",
+      "GPS",
+      "Barometer",
+      "Compass",
+      "RangeFinder",
+      "OpticalFlow",
+      "Airspeed",
+      "Beacon",
+      "VisualOdom",
+      "WheelEncoder",
+      "AHRS"
+    ],
+    "capabilities": [
+      "state estimation",
+      "multi-source fusion selection",
+      "lane affinity and multi-IMU selection",
+      "health and innovation checks"
+    ],
+    "config_flow": [
+      "Enable EKF3 and select it through AHRS_EKF_TYPE when desired",
+      "Choose active IMU lanes and source sets via EK3_IMU_MASK and EK3_SRCn_*",
+      "Only becomes trustworthy after configured source sensors are healthy"
+    ]
+  },
+  "AttitudeControl": {
+    "category": "system",
+    "params": [
+      "ATC_RATE_FF_ENAB",
+      "ATC_ANGLE_BOOST",
+      "ATC_ANG_RLL_P",
+      "ATC_ANG_PIT_P",
+      "ATC_ANG_YAW_P",
+      "ATC_ANG_LIM_TC",
+      "ATC_RATE_R_MAX",
+      "ATC_RATE_P_MAX",
+      "ATC_RATE_Y_MAX",
+      "ATC_INPUT_TC",
+      "ATC_ANGLE_MAX",
+      "ATC_RATE_WPY_MAX",
+      "ATC_ACC_R_MAX",
+      "ATC_ACC_P_MAX",
+      "ATC_ACC_Y_MAX"
+    ],
+    "param_prefixes": [
+      "ATC_"
+    ],
+    "modules": [
+      "libraries/AC_AttitudeControl"
+    ],
+    "dependencies": [
+      "AHRS",
+      "Motors"
+    ],
+    "capabilities": [
+      "attitude target shaping",
+      "angle to rate conversion",
+      "rate limiting",
+      "landed gain reduction"
+    ],
+    "config_flow": [
+      "Created after motor implementation and AHRS view exist",
+      "Consumes vehicle attitude from AHRS",
+      "Drives motor outputs through the selected motor backend"
+    ]
+  },
+  "AHRS": {
+    "category": "system",
+    "params": [
+      "AHRS_EKF_TYPE"
+    ],
+    "param_prefixes": [
+      "AHRS_"
+    ],
+    "modules": [
+      "libraries/AP_AHRS"
+    ],
+    "dependencies": [
+      "IMU",
+      "GPS",
+      "Barometer",
+      "EKF2",
+      "EKF3"
+    ],
+    "capabilities": [
+      "attitude and heading reference",
+      "navigation backend selection",
+      "vehicle state access for controllers"
+    ],
+    "config_flow": [
+      "Hosts EKF backends",
+      "Provides views consumed by attitude and position controllers"
+    ]
+  },
+  "Battery": {
+    "category": "energy",
+    "params": [
+      "BATT_MONITOR",
+      "BATT_CAPACITY",
+      "BATT_SERIAL_NUM",
+      "BATT_LOW_TIMER",
+      "BATT_FS_VOLTSRC",
+      "BATT_LOW_VOLT",
+      "BATT_LOW_MAH",
+      "BATT_CRT_VOLT",
+      "BATT_CRT_MAH",
+      "BATT_FS_LOW_ACT",
+      "BATT_FS_CRT_ACT",
+      "BATT_ARM_VOLT",
+      "BATT_ARM_MAH",
+      "BATT_OPTIONS",
+      "BATT_ESC_INDEX",
+      "BATT2_MONITOR",
+      "BATT_VOLT_PIN",
+      "BATT_CURR_PIN",
+      "BATT_VOLT_MULT",
+      "BATT_AMP_PERVLT",
+      "BATT_AMP_OFFSET"
+    ],
+    "param_prefixes": [
+      "BATT"
+    ],
+    "modules": [
+      "libraries/AP_BattMonitor"
+    ],
+    "dependencies": [
+      "Motors",
+      "Arming",
+      "ESC"
+    ],
+    "capabilities": [
+      "voltage and current monitoring",
+      "failsafe triggering",
+      "arming validation",
+      "motor compensation source",
+      "multi-battery aggregation"
+    ],
+    "config_flow": [
+      "Select monitor backend type per battery instance",
+      "Configure analog or backend specific transport parameters",
+      "Set failsafe and arming thresholds before flight use",
+      "Configure monitor instance before using MOT_BAT_* compensation"
+    ]
+  },
+  "Serial": {
+    "category": "communication",
+    "params": [
+      "SERIAL0_BAUD",
+      "SERIAL1_BAUD",
+      "SERIAL2_BAUD"
+    ],
+    "param_prefixes": [
+      "SERIAL"
+    ],
+    "modules": [
+      "libraries/AP_SerialManager"
+    ],
+    "dependencies": [
+      "GPS"
+    ],
+    "capabilities": [
+      "port configuration",
+      "backend transport selection"
+    ],
+    "config_flow": [
+      "Must be coherent with sensor transport selection, especially GPS"
+    ]
+  },
+  "Compass": {
+    "category": "sensor",
+    "params": [
+      "COMPASS_*"
+    ],
+    "param_prefixes": [
+      "COMPASS_"
+    ],
+    "modules": [
+      "libraries/AP_Compass"
+    ],
+    "dependencies": [
+      "EKF2",
+      "AHRS"
+    ],
+    "capabilities": [
+      "yaw reference",
+      "magnetic field measurements"
+    ],
+    "config_flow": [
+      "Configured before EKF magnetometer fusion can be trusted"
+    ]
+  }
+}

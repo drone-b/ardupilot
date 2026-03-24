@@ -1,0 +1,76 @@
+{
+  "GPS": [
+    "SERIAL",
+    "CAN",
+    "AHRS"
+  ],
+  "IMU": [
+    "AHRS",
+    "Motors"
+  ],
+  "Barometer": [
+    "CAN",
+    "GPS",
+    "Motors"
+  ],
+  "Servos": [
+    "RC_INPUT",
+    "VEHICLE_MODE"
+  ],
+  "Motors": [
+    "Servos",
+    "Battery",
+    "FRAME_CLASS",
+    "AttitudeControl"
+  ],
+  "AttitudeControl": [
+    "AHRS",
+    "Motors"
+  ],
+  "AHRS": [
+    "IMU",
+    "GPS",
+    "Barometer",
+    "EKF2",
+    "EKF3"
+  ],
+  "EKF2": [
+    "IMU",
+    "GPS",
+    "Barometer",
+    "Compass",
+    "RangeFinder",
+    "OpticalFlow",
+    "Airspeed",
+    "Beacon",
+    "VisualOdom",
+    "WheelEncoder",
+    "AHRS"
+  ],
+  "EKF3": [
+    "IMU",
+    "GPS",
+    "Barometer",
+    "Compass",
+    "RangeFinder",
+    "OpticalFlow",
+    "Airspeed",
+    "Beacon",
+    "VisualOdom",
+    "WheelEncoder",
+    "AHRS"
+  ],
+  "Battery": [
+    "Motors",
+    "Arming",
+    "ESC"
+  ],
+  "Compass": [
+    "EKF2",
+    "EKF3",
+    "AHRS"
+  ],
+  "Serial": [
+    "GPS"
+  ]
+}

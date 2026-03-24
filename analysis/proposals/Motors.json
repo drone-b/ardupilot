@@ -1,0 +1,77 @@
+{
+  "component": "Motors",
+  "function": "Motor output frontend for multicopter and helicopter variants, including spool logic, thrust linearization, PWM protocol selection and battery-aware output scaling.",
+  "identified_components": [
+    "AP_MotorsMulticopter",
+    "Thrust_Linearization",
+    "AP_MotorsHeli",
+    "AP_MotorsHeli_RSC"
+  ],
+  "params": [
+    "MOT_YAW_HEADROOM",
+    "MOT_THST_EXPO",
+    "MOT_SPIN_MAX",
+    "MOT_BAT_VOLT_MAX",
+    "MOT_BAT_VOLT_MIN",
+    "MOT_BAT_CURR_MAX",
+    "MOT_PWM_TYPE",
+    "MOT_PWM_MIN",
+    "MOT_PWM_MAX",
+    "MOT_SPIN_MIN",
+    "MOT_SPIN_ARM",
+    "MOT_BAT_CURR_TC",
+    "MOT_THST_HOVER",
+    "MOT_HOVER_LEARN",
+    "MOT_SAFE_DISARM",
+    "MOT_YAW_SV_ANGLE",
+    "MOT_SPOOL_TIME",
+    "MOT_BOOST_SCALE",
+    "MOT_BAT_IDX",
+    "MOT_SLEW_UP_TIME",
+    "MOT_SLEW_DN_TIME",
+    "MOT_SAFE_TIME",
+    "MOT_OPTIONS",
+    "MOT_SPOOL_TIM_DN",
+    "MOT_IDLE_SEC",
+    "Q_M_PWM_TYPE",
+    "Q_M_SPIN_MIN",
+    "Q_M_SPIN_ARM",
+    "H_COL_MIN",
+    "H_COL_MAX",
+    "H_SV_MAN",
+    "H_CYC_MAX",
+    "H_RSC_SETPOINT",
+    "H_RSC_MODE",
+    "H_RSC_RUNUP_TIME",
+    "H_COL_HOVER",
+    "H_HOVER_LEARN",
+    "H_OPTIONS"
+  ],
+  "param_prefixes": [
+    "MOT_",
+    "Q_M_",
+    "H_"
+  ],
+  "modules": [
+    "libraries/AP_Motors/AP_MotorsMulticopter.cpp",
+    "libraries/AP_Motors/AP_MotorsMulticopter.h",
+    "libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp",
+    "libraries/AP_Motors/AP_MotorsHeli.cpp",
+    "libraries/AP_Motors/AP_MotorsHeli_RSC.cpp"
+  ],
+  "dependencies": [
+    "AP_BattMonitor",
+    "AP_Baro",
+    "AP_AHRS",
+    "SRV_Channel",
+    "AP_Logger",
+    "AP_HAL"
+  ],
+  "evidence": [
+    "AP_MotorsMulticopter.cpp includes AP_BattMonitor, AP_Logger and uses AP_MOTORS_PARAM_PREFIX as MOT_ for Copter and Q_M_ for Plane.",
+    "AP_Motors_Thrust_Linearization.cpp includes AP_BattMonitor, AP_Baro and AP_AHRS and uses AP::battery() and AP::ahrs().",
+    "ArduCopter/Parameters.cpp exposes motors with prefixes MOT_ and H_.",
+    "AP_MotorsMulticopter.cpp declares parameters such as PWM_TYPE, SPIN_MIN, SPIN_ARM, BAT_IDX and OPTIONS.",
+    "AP_MotorsHeli.cpp and AP_MotorsHeli_RSC.cpp declare helicopter-specific parameters such as COL_MIN, COL_MAX, RSC_SETPOINT and RSC_MODE."
+  ]
+}

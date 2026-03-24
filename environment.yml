@@ -1,0 +1,21 @@
+name: ardupilot-dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - setuptools
+  - wheel
+  - future
+  - lxml
+  - pyserial
+  - pexpect
+  - numpy
+  - scipy
+  - flake8
+  - packaging
+  - argcomplete
+  - geocoder
+  - empy=3.3.4
+  - pip:
+      - MAVProxy==1.8.71
