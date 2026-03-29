@@ -83,6 +83,7 @@ private:
     const Parameter* at(ParameterId id) const;
 
     Parameter parameters_[parameter_count_] {};
+    bool dirty_ {false};
 };
 
 } // namespace dfw::config

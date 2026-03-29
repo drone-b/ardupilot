@@ -1,8 +1,42 @@
 #include "config/Parameters.hpp"
 
+#include <cstdio>
+
 namespace dfw::config {
 
 namespace {
+
+constexpr std::uint32_t k_storage_magic = 0x44504657U; // "WFPD"
+constexpr const char* k_storage_file = "droneos-params.bin";
+constexpr const char* k_storage_temp_file = "droneos-params.tmp";
+
+struct StorageHeader {
+    std::uint32_t magic {k_storage_magic};
+    std::uint16_t schema_version {ParameterRegistry::k_schema_version};
+    std::uint16_t parameter_count {static_cast<std::uint16_t>(ParameterId::count)};
+    std::uint32_t checksum {0};
+};
+
+struct StorageParameterEntry {
+    std::uint8_t id {0};
+    std::uint8_t type {0};
+    std::uint16_t reserved {0};
+    ParameterValue value {};
+};
+
+std::uint32_t checksum_parameters(const StorageParameterEntry* entries, std::size_t count)
+{
+    const auto* bytes = reinterpret_cast<const std::uint8_t*>(entries);
+    const std::size_t length = sizeof(StorageParameterEntry) * count;
+
+    std::uint32_t crc = 0x811C9DC5U;
+    for (std::size_t index = 0; index < length; ++index) {
+        crc ^= bytes[index];
+        crc *= 16777619U;
+    }
+
+    return crc;
+}
 
 constexpr float k_pi = 3.14159265358979323846f;
 
@@ -96,6 +130,7 @@ bool ParameterRegistry::set_float(ParameterId id, float value)
     }
 
     parameter->value.float32 = value;
+    dirty_ = true;
     return true;
 }
 
@@ -111,6 +146,7 @@ bool ParameterRegistry::set_int(ParameterId id, std::int32_t value)
     }
 
     parameter->value.int32 = value;
+    dirty_ = true;
     return true;
 }
 
@@ -126,6 +162,7 @@ bool ParameterRegistry::set_bool(ParameterId id, bool value)
     }
 
     parameter->value.boolean = value;
+    dirty_ = true;
     return true;
 }
 
@@ -134,16 +171,97 @@ void ParameterRegistry::reset_to_defaults()
     for (std::size_t i = 0; i < parameter_count_; ++i) {
         parameters_[i].value = parameters_[i].default_value;
     }
+
+    dirty_ = true;
 }
 
 bool ParameterRegistry::load_from_storage()
 {
-    return false;
+    FILE* file = std::fopen(k_storage_file, "rb");
+    if (file == nullptr) {
+        return false;
+    }
+
+    StorageHeader header {};
+    const std::size_t header_read = std::fread(&header, sizeof(header), 1U, file);
+    if (header_read != 1U ||
+        header.magic != k_storage_magic ||
+        header.schema_version != k_schema_version ||
+        header.parameter_count != static_cast<std::uint16_t>(parameter_count_)) {
+        std::fclose(file);
+        return false;
+    }
+
+    StorageParameterEntry stored_entries[parameter_count_] {};
+    const std::size_t params_read =
+        std::fread(stored_entries, sizeof(StorageParameterEntry), parameter_count_, file);
+    std::fclose(file);
+    if (params_read != parameter_count_) {
+        return false;
+    }
+
+    const std::uint32_t observed_checksum =
+        checksum_parameters(stored_entries, parameter_count_);
+    if (observed_checksum != header.checksum) {
+        return false;
+    }
+
+    for (std::size_t index = 0; index < parameter_count_; ++index) {
+        if (stored_entries[index].id != static_cast<std::uint8_t>(parameters_[index].id) ||
+            stored_entries[index].type != static_cast<std::uint8_t>(parameters_[index].type)) {
+            return false;
+        }
+
+        parameters_[index].value = stored_entries[index].value;
+    }
+
+    dirty_ = false;
+    return true;
 }
 
 bool ParameterRegistry::save_to_storage() const
 {
-    return false;
+    if (!dirty_) {
+        return true;
+    }
+
+    StorageParameterEntry entries[parameter_count_] {};
+    for (std::size_t index = 0; index < parameter_count_; ++index) {
+        entries[index].id = static_cast<std::uint8_t>(parameters_[index].id);
+        entries[index].type = static_cast<std::uint8_t>(parameters_[index].type);
+        entries[index].value = parameters_[index].value;
+    }
+
+    StorageHeader header {};
+    header.checksum = checksum_parameters(entries, parameter_count_);
+
+    FILE* file = std::fopen(k_storage_temp_file, "wb");
+    if (file == nullptr) {
+        return false;
+    }
+
+    const std::size_t header_written = std::fwrite(&header, sizeof(header), 1U, file);
+    const std::size_t params_written =
+        std::fwrite(entries, sizeof(StorageParameterEntry), parameter_count_, file);
+    const int flush_result = std::fflush(file);
+    const int close_result = std::fclose(file);
+
+    if (header_written != 1U ||
+        params_written != parameter_count_ ||
+        flush_result != 0 ||
+        close_result != 0) {
+        (void) std::remove(k_storage_temp_file);
+        return false;
+    }
+
+    (void) std::remove(k_storage_file);
+    if (std::rename(k_storage_temp_file, k_storage_file) != 0) {
+        (void) std::remove(k_storage_temp_file);
+        return false;
+    }
+
+    const_cast<ParameterRegistry*>(this)->dirty_ = false;
+    return true;
 }
 
 std::uint16_t ParameterRegistry::schema_version() const

@@ -72,6 +72,10 @@ TelemetryPublisher::make_binary_frame(const TelemetryFrame& frame, std::uint32_t
     write_float_le(packet.motors_le[3], frame.motor_outputs.values[3]);
     packet.flight_state = static_cast<std::uint8_t>(frame.flight_state);
     packet.reserved[0] = frame.scheduler_mode;
+    packet.reserved[1] =
+        static_cast<std::uint8_t>(frame.scheduler_runtime.scheduler_skipped_release_count & 0xFFU);
+    packet.reserved[2] =
+        static_cast<std::uint8_t>(frame.scheduler_runtime.scheduler_mode_transition_count & 0xFFU);
     return packet;
 }
 

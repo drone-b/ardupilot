@@ -12,6 +12,32 @@
 
 namespace dfw::comms {
 
+struct SchedulerRuntimeSnapshot {
+    common::DurationUs imu_last_us {0};
+    common::DurationUs imu_max_us {0};
+    std::uint32_t imu_overrun_count {0};
+    std::uint32_t imu_skipped_count {0};
+
+    common::DurationUs estimation_last_us {0};
+    common::DurationUs estimation_max_us {0};
+    std::uint32_t estimation_overrun_count {0};
+    std::uint32_t estimation_skipped_count {0};
+
+    common::DurationUs control_last_us {0};
+    common::DurationUs control_max_us {0};
+    std::uint32_t control_overrun_count {0};
+    std::uint32_t control_skipped_count {0};
+
+    common::DurationUs output_last_us {0};
+    common::DurationUs output_max_us {0};
+    std::uint32_t output_overrun_count {0};
+    std::uint32_t output_skipped_count {0};
+
+    std::uint32_t scheduler_skipped_release_count {0};
+    std::uint32_t scheduler_slack_denial_count {0};
+    std::uint32_t scheduler_mode_transition_count {0};
+};
+
 struct TelemetryFrame {
     common::TimestampUs timestamp_us {0};
     estimation::AttitudeState attitude {};
@@ -21,6 +47,7 @@ struct TelemetryFrame {
     control::MotorOutputs motor_outputs {};
     control::AllocatorStatus allocator_status {};
     std::uint8_t scheduler_mode {0};
+    SchedulerRuntimeSnapshot scheduler_runtime {};
     safety::FlightState flight_state {safety::FlightState::disarmed};
 };
 

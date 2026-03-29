@@ -1,5 +1,6 @@
 #include "comms/AiControlLink.hpp"
 #include "comms/TelemetryPublisher.hpp"
+#include "config/Parameters.hpp"
 #include "control/ControlAllocator.hpp"
 #include "control/ControlLoop.hpp"
 #include "control/FlightModeManager.hpp"
@@ -13,6 +14,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstring>
 #include <thread>
 
 namespace {
@@ -382,6 +384,47 @@ bool command_is_fresh(const dfw::control::PilotCommand& command,
 
 using FlightLogger = dfw::logging::Logger<32>;
 
+dfw::comms::SchedulerRuntimeSnapshot capture_scheduler_runtime(const dfw::runtime::Scheduler& scheduler)
+{
+    dfw::comms::SchedulerRuntimeSnapshot snapshot {};
+
+    const dfw::runtime::Scheduler::SchedulerStats& stats = scheduler.stats();
+    snapshot.scheduler_skipped_release_count = stats.skipped_release_count;
+    snapshot.scheduler_slack_denial_count = stats.slack_denial_count;
+    snapshot.scheduler_mode_transition_count = stats.mode_transition_count;
+
+    for (std::size_t index = 0; index < scheduler.task_count(); ++index) {
+        const dfw::runtime::Scheduler::TaskSpec* task = scheduler.task_at(index);
+        if (task == nullptr || task->name == nullptr) {
+            continue;
+        }
+
+        if (std::strcmp(task->name, "imu_acquisition") == 0) {
+            snapshot.imu_last_us = task->timing.last_execution_us;
+            snapshot.imu_max_us = task->timing.max_execution_us;
+            snapshot.imu_overrun_count = task->timing.overrun_count;
+            snapshot.imu_skipped_count = task->timing.skipped_release_count;
+        } else if (std::strcmp(task->name, "estimation_update") == 0) {
+            snapshot.estimation_last_us = task->timing.last_execution_us;
+            snapshot.estimation_max_us = task->timing.max_execution_us;
+            snapshot.estimation_overrun_count = task->timing.overrun_count;
+            snapshot.estimation_skipped_count = task->timing.skipped_release_count;
+        } else if (std::strcmp(task->name, "control_update") == 0) {
+            snapshot.control_last_us = task->timing.last_execution_us;
+            snapshot.control_max_us = task->timing.max_execution_us;
+            snapshot.control_overrun_count = task->timing.overrun_count;
+            snapshot.control_skipped_count = task->timing.skipped_release_count;
+        } else if (std::strcmp(task->name, "output_update") == 0) {
+            snapshot.output_last_us = task->timing.last_execution_us;
+            snapshot.output_max_us = task->timing.max_execution_us;
+            snapshot.output_overrun_count = task->timing.overrun_count;
+            snapshot.output_skipped_count = task->timing.skipped_release_count;
+        }
+    }
+
+    return snapshot;
+}
+
 struct AppContext {
     SimHal* hal {nullptr};
     dfw::runtime::Scheduler* scheduler {nullptr};
@@ -512,6 +555,8 @@ void output_update_task(void* context, dfw::common::TimestampUs now_us)
 void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
 {
     auto* app = static_cast<AppContext*>(context);
+    const dfw::comms::SchedulerRuntimeSnapshot scheduler_runtime =
+        capture_scheduler_runtime(*app->scheduler);
     const dfw::comms::TelemetryFrame telemetry_frame {
         now_us,
         app->attitude_estimator->state(),
@@ -521,6 +566,7 @@ void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
         *app->latest_motor_outputs,
         *app->latest_allocator_status,
         static_cast<std::uint8_t>(app->scheduler->mode()),
+        scheduler_runtime,
         app->latest_safety_output->state,
     };
     app->telemetry_publisher->publish(telemetry_frame);
@@ -538,6 +584,7 @@ void log_flush_task(void* context, dfw::common::TimestampUs now_us)
 
 int main()
 {
+    dfw::config::ParameterRegistry& parameters = dfw::config::ParameterRegistry::instance();
     SimHal hal {};
     dfw::runtime::Scheduler scheduler {hal.clock()};
     dfw::control::ControlLoop control_loop {hal};
@@ -580,6 +627,10 @@ int main()
     };
 
     control_loop.initialize();
+    if (!parameters.load_from_storage()) {
+        parameters.reset_to_defaults();
+        (void) parameters.save_to_storage();
+    }
     sensor_manager.initialize();
     log_storage.initialize();
     hal.sensor_interrupts().register_data_ready_line(0, imu_irq_callback, &imu_irq_context);
@@ -629,7 +680,9 @@ int main()
         const dfw::common::TimestampUs cycle_start_us = hal.clock().now_us();
         imu_irq_callback(&imu_irq_context);
         scheduler.run_once();
-        hal.board_control().service_watchdog();
+        if (scheduler.mode() != dfw::runtime::Scheduler::SchedulerMode::emergency) {
+            hal.board_control().service_watchdog();
+        }
 
         const dfw::common::TimestampUs cycle_end_us = hal.clock().now_us();
         if (cycle_end_us > cycle_start_us) {

@@ -83,6 +83,29 @@ SdLogStorage::BinaryLogRecord SdLogStorage::make_record(const comms::TelemetryFr
     record.motors[1] = frame.motor_outputs.values[1];
     record.motors[2] = frame.motor_outputs.values[2];
     record.motors[3] = frame.motor_outputs.values[3];
+    record.scheduler_mode = frame.scheduler_mode;
+    record.scheduler_skipped_release_count =
+        frame.scheduler_runtime.scheduler_skipped_release_count;
+    record.scheduler_slack_denial_count =
+        frame.scheduler_runtime.scheduler_slack_denial_count;
+    record.scheduler_mode_transition_count =
+        frame.scheduler_runtime.scheduler_mode_transition_count;
+    record.imu_last_us = frame.scheduler_runtime.imu_last_us;
+    record.imu_max_us = frame.scheduler_runtime.imu_max_us;
+    record.imu_overrun_count = frame.scheduler_runtime.imu_overrun_count;
+    record.imu_skipped_count = frame.scheduler_runtime.imu_skipped_count;
+    record.estimation_last_us = frame.scheduler_runtime.estimation_last_us;
+    record.estimation_max_us = frame.scheduler_runtime.estimation_max_us;
+    record.estimation_overrun_count = frame.scheduler_runtime.estimation_overrun_count;
+    record.estimation_skipped_count = frame.scheduler_runtime.estimation_skipped_count;
+    record.control_last_us = frame.scheduler_runtime.control_last_us;
+    record.control_max_us = frame.scheduler_runtime.control_max_us;
+    record.control_overrun_count = frame.scheduler_runtime.control_overrun_count;
+    record.control_skipped_count = frame.scheduler_runtime.control_skipped_count;
+    record.output_last_us = frame.scheduler_runtime.output_last_us;
+    record.output_max_us = frame.scheduler_runtime.output_max_us;
+    record.output_overrun_count = frame.scheduler_runtime.output_overrun_count;
+    record.output_skipped_count = frame.scheduler_runtime.output_skipped_count;
     record.flight_state = static_cast<std::uint8_t>(frame.flight_state);
     record.valid = frame.attitude.valid ? 1U : 0U;
     record.record_size = static_cast<std::uint16_t>(sizeof(BinaryLogRecord));
