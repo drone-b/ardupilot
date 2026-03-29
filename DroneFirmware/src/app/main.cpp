@@ -6,8 +6,11 @@
 #include "control/ControlLoop.hpp"
 #include "control/FlightModeManager.hpp"
 #include "estimation/AttitudeEstimator.hpp"
+#include "future/DroneFactoryBridge.hpp"
+#include "future/HardwareGraph.hpp"
 #include "logging/Logger.hpp"
 #include "logging/SdLogStorage.hpp"
+#include "platform/BoardTarget.hpp"
 #include "platform/Hal.hpp"
 #include "runtime/Scheduler.hpp"
 #include "safety/SafetySupervisor.hpp"
@@ -446,6 +449,8 @@ struct AppContext {
     dfw::control::PilotCommand* pilot_command {nullptr};
     bool* latest_ai_link_fresh {nullptr};
     std::uint8_t* latest_authority_fallback_reason {nullptr};
+    std::uint32_t* authority_transition_count {nullptr};
+    dfw::common::TimestampUs* authority_last_transition_us {nullptr};
 };
 
 std::uint32_t safety_state_flags(const dfw::safety::SafetyOutput& safety)
@@ -494,8 +499,13 @@ void control_update_task(void* context, dfw::common::TimestampUs now_us)
         app->ai_control_link->link_state(now_us, k_ai_command_max_latency_us);
     const bool ai_link_fresh = ai_link_state == dfw::comms::AiLinkState::fresh;
     *app->latest_ai_link_fresh = ai_link_fresh;
-    *app->latest_authority_fallback_reason =
+    const std::uint8_t new_fallback_reason =
         ai_link_fresh ? 0U : static_cast<std::uint8_t>(ai_link_state);
+    if (new_fallback_reason != *app->latest_authority_fallback_reason) {
+        *app->latest_authority_fallback_reason = new_fallback_reason;
+        ++(*app->authority_transition_count);
+        *app->authority_last_transition_us = now_us;
+    }
 
     if (ai_link_fresh) {
         const dfw::comms::AiWrenchCommandV1& fresh_ai = app->ai_control_link->latest_wrench();
@@ -597,6 +607,8 @@ void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
         static_cast<std::uint8_t>(app->scheduler->mode()),
         *app->latest_ai_link_fresh ? 1U : 0U,
         *app->latest_authority_fallback_reason,
+        *app->authority_transition_count,
+        *app->authority_last_transition_us,
         scheduler_runtime,
         app->latest_safety_output->state,
     };
@@ -661,6 +673,11 @@ int main()
 {
     dfw::config::ParameterRegistry& parameters = dfw::config::ParameterRegistry::instance();
     SimHal hal {};
+    const dfw::platform::BoardTargetProfile board_profile =
+        dfw::platform::BoardTargetRegistry::simulation_profile();
+    const bool board_ready_for_flight =
+        dfw::platform::BoardTargetRegistry::flight_qualification_ready(board_profile);
+    (void) board_ready_for_flight;
     dfw::runtime::Scheduler scheduler {hal.clock()};
     dfw::control::ControlLoop control_loop {hal};
     dfw::control::FlightModeManager flight_mode_manager {};
@@ -679,6 +696,8 @@ int main()
     dfw::safety::SafetySupervisor safety_supervisor {};
     SimImuDevice imu_device {*hal.buses().create_spi_device(0, 0, {})};
     dfw::sensing::SensorManager sensor_manager {imu_device};
+    dfw::future::HardwareGraph hardware_graph {};
+    dfw::future::DroneFactoryBridge factory_bridge {};
     ImuIrqContext imu_irq_context {&hal.clock(), &sensor_manager, &scheduler};
     dfw::sensing::ImuSample latest_imu_sample {};
     dfw::control::MotorOutputs latest_motor_outputs {};
@@ -687,6 +706,8 @@ int main()
     dfw::control::PilotCommand pilot_command {};
     bool latest_ai_link_fresh = false;
     std::uint8_t latest_authority_fallback_reason = 0U;
+    std::uint32_t authority_transition_count = 0U;
+    dfw::common::TimestampUs authority_last_transition_us = 0;
     AppContext app_context {
         &hal,
         &scheduler,
@@ -707,9 +728,39 @@ int main()
         &pilot_command,
         &latest_ai_link_fresh,
         &latest_authority_fallback_reason,
+        &authority_transition_count,
+        &authority_last_transition_us,
     };
 
     control_loop.initialize();
+    (void) hardware_graph.add_node(dfw::future::NodeDescriptor {
+        1001U,
+        0xA1B2C3D4U,
+        1U,
+        10U,
+        0U,
+        dfw::future::BusKind::spi,
+        true,
+    });
+    (void) hardware_graph.add_node(dfw::future::NodeDescriptor {
+        2001U,
+        0x55AA55AAU,
+        2U,
+        20U,
+        0U,
+        dfw::future::BusKind::dronecan,
+        true,
+    });
+    (void) hardware_graph.add_edge(dfw::future::EdgeDescriptor {
+        0U,
+        1U,
+        1U,
+        true,
+    });
+    const dfw::future::GraphSnapshot hardware_snapshot = hardware_graph.snapshot();
+    factory_bridge.set_graph_snapshot(hardware_snapshot);
+    (void) factory_bridge.run_named_test("sensor_self_test");
+
     if (!parameters.load_from_storage()) {
         parameters.reset_to_defaults();
         (void) parameters.save_to_storage();

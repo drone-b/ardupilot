@@ -11,6 +11,10 @@ constexpr float k_max_dt_s = 0.004f;
 constexpr float k_accel_correction_gain = 0.06f;
 constexpr float k_bias_adaptation_gain = 0.02f;
 constexpr float k_innovation_gate_rad = 0.8f;
+constexpr float k_process_noise_growth = 0.015f;
+constexpr float k_measurement_gain = 0.08f;
+constexpr std::uint32_t k_degraded_gate_cycles = 25U;
+constexpr std::uint32_t k_failed_gate_cycles = 200U;
 constexpr float k_pi_over_two = 1.5707963267948966f;
 
 } // namespace
@@ -21,6 +25,14 @@ void AttitudeEstimator::reset()
 {
     state_ = {};
     q_ = {};
+    covariance_diag_[0] = 0.02f;
+    covariance_diag_[1] = 0.02f;
+    covariance_diag_[2] = 0.04f;
+    covariance_diag_[3] = 0.001f;
+    covariance_diag_[4] = 0.001f;
+    covariance_diag_[5] = 0.001f;
+    consecutive_gated_cycles_ = 0;
+    consecutive_clean_cycles_ = 0;
     previous_sample_time_us_ = 0;
 }
 
@@ -51,6 +63,11 @@ bool AttitudeEstimator::update(const sensing::ImuSample& imu_sample)
         imu_sample.gyro_rad_s[2] - state_.gyro_bias_rad_s[2],
     };
     q_ = integrate_body_rate(q_, omega_body, dt_s);
+
+    for (float& covariance : covariance_diag_) {
+        covariance += k_process_noise_growth * dt_s;
+        covariance = clamp(covariance, 1.0e-6f, 4.0f);
+    }
 
     const float ax = imu_sample.accel_mps2[0];
     const float ay = imu_sample.accel_mps2[1];
@@ -99,6 +116,11 @@ bool AttitudeEstimator::update(const sensing::ImuSample& imu_sample)
             q_.y = cr * sp * cy + sr * cp * sy;
             q_.z = cr * cp * sy - sr * sp * cy;
             normalize_quaternion(q_);
+
+            for (float& covariance : covariance_diag_) {
+                covariance *= (1.0f - k_measurement_gain);
+                covariance = clamp(covariance, 1.0e-6f, 4.0f);
+            }
         }
     } else {
         state_.innovation_norm = 0.0f;
@@ -114,10 +136,29 @@ bool AttitudeEstimator::update(const sensing::ImuSample& imu_sample)
     state_.q[1] = q_.x;
     state_.q[2] = q_.y;
     state_.q[3] = q_.z;
+    for (std::uint8_t index = 0; index < 6U; ++index) {
+        state_.covariance_diag[index] = covariance_diag_[index];
+    }
     state_.pitch_rad = clamp(state_.pitch_rad, -k_pi_over_two, k_pi_over_two);
     state_.dt_s = dt_s;
     state_.estimator_lane = 0U;
-    state_.estimator_health = state_.innovation_gated ? 1U : 0U;
+
+    if (state_.innovation_gated) {
+        ++consecutive_gated_cycles_;
+        consecutive_clean_cycles_ = 0;
+    } else {
+        consecutive_gated_cycles_ = 0;
+        ++consecutive_clean_cycles_;
+    }
+
+    if (consecutive_gated_cycles_ >= k_failed_gate_cycles) {
+        state_.estimator_health = 2U;
+    } else if (consecutive_gated_cycles_ >= k_degraded_gate_cycles) {
+        state_.estimator_health = 1U;
+    } else {
+        state_.estimator_health = 0U;
+    }
+
     state_.valid = true;
     return true;
 }

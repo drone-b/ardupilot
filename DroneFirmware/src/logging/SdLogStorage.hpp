@@ -47,6 +47,8 @@ private:
         std::uint8_t ai_link_fresh {0};
         std::uint8_t authority_fallback_reason {0};
         std::uint8_t reserved0 {0};
+        std::uint32_t authority_transition_count {0};
+        std::uint64_t authority_last_transition_us {0};
         std::uint32_t scheduler_skipped_release_count {0};
         std::uint32_t scheduler_slack_denial_count {0};
         std::uint32_t scheduler_mode_transition_count {0};

@@ -14,6 +14,7 @@ struct AttitudeState {
     float gyro_bias_rad_s[3] {0.0f, 0.0f, 0.0f};
     float innovation_norm {0.0f};
     float innovation_norm_xyz[3] {0.0f, 0.0f, 0.0f};
+    float covariance_diag[6] {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     std::uint8_t gate_status {0};
     std::uint8_t estimator_lane {0};
     std::uint8_t estimator_health {0};
@@ -52,6 +53,9 @@ private:
 
     AttitudeState state_ {};
     Quaternion q_ {};
+    float covariance_diag_[6] {0.02f, 0.02f, 0.04f, 0.001f, 0.001f, 0.001f};
+    std::uint32_t consecutive_gated_cycles_ {0};
+    std::uint32_t consecutive_clean_cycles_ {0};
     common::TimestampUs previous_sample_time_us_ {0};
 };
 

@@ -49,6 +49,8 @@ struct TelemetryFrame {
     std::uint8_t scheduler_mode {0};
     std::uint8_t ai_link_fresh {0};
     std::uint8_t authority_fallback_reason {0};
+    std::uint32_t authority_transition_count {0};
+    common::TimestampUs authority_last_transition_us {0};
     SchedulerRuntimeSnapshot scheduler_runtime {};
     safety::FlightState flight_state {safety::FlightState::disarmed};
 };
