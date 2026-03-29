@@ -1,4 +1,5 @@
 #include "comms/AiControlLink.hpp"
+#include "comms/AiStatePublisher.hpp"
 #include "comms/TelemetryPublisher.hpp"
 #include "config/Parameters.hpp"
 #include "control/ControlAllocator.hpp"
@@ -432,6 +433,7 @@ struct AppContext {
     dfw::control::FlightModeManager* flight_mode_manager {nullptr};
     dfw::control::ControlAllocator* allocator {nullptr};
     dfw::comms::AiControlLink* ai_control_link {nullptr};
+    dfw::comms::AiStatePublisher* ai_state_publisher {nullptr};
     dfw::comms::TelemetryPublisher* telemetry_publisher {nullptr};
     FlightLogger* logger {nullptr};
     dfw::estimation::AttitudeEstimator* attitude_estimator {nullptr};
@@ -442,7 +444,28 @@ struct AppContext {
     dfw::control::AllocatorStatus* latest_allocator_status {nullptr};
     dfw::safety::SafetyOutput* latest_safety_output {nullptr};
     dfw::control::PilotCommand* pilot_command {nullptr};
+    bool* latest_ai_link_fresh {nullptr};
+    std::uint8_t* latest_authority_fallback_reason {nullptr};
 };
+
+std::uint32_t safety_state_flags(const dfw::safety::SafetyOutput& safety)
+{
+    std::uint32_t flags = 0U;
+
+    if (!safety.allow_motor_output) {
+        flags |= 0x01U;
+    }
+
+    if (safety.state == dfw::safety::FlightState::failsafe) {
+        flags |= 0x02U;
+    }
+
+    if (safety.block_reason != dfw::safety::SafetyBlockReason::none) {
+        flags |= 0x04U;
+    }
+
+    return flags;
+}
 
 void imu_acquisition_task(void* context, dfw::common::TimestampUs now_us)
 {
@@ -467,8 +490,14 @@ void control_update_task(void* context, dfw::common::TimestampUs now_us)
 
     dfw::control::MotionTarget target {};
     bool target_valid = false;
+    const dfw::comms::AiLinkState ai_link_state =
+        app->ai_control_link->link_state(now_us, k_ai_command_max_latency_us);
+    const bool ai_link_fresh = ai_link_state == dfw::comms::AiLinkState::fresh;
+    *app->latest_ai_link_fresh = ai_link_fresh;
+    *app->latest_authority_fallback_reason =
+        ai_link_fresh ? 0U : static_cast<std::uint8_t>(ai_link_state);
 
-    if (app->ai_control_link->has_fresh_command(now_us, k_ai_command_max_latency_us)) {
+    if (ai_link_fresh) {
         const dfw::comms::AiWrenchCommandV1& fresh_ai = app->ai_control_link->latest_wrench();
         // Current control loop is rate-centric; this maps wrench contract into
         // rate targets as an interim compatibility path.
@@ -566,11 +595,57 @@ void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
         *app->latest_motor_outputs,
         *app->latest_allocator_status,
         static_cast<std::uint8_t>(app->scheduler->mode()),
+        *app->latest_ai_link_fresh ? 1U : 0U,
+        *app->latest_authority_fallback_reason,
         scheduler_runtime,
         app->latest_safety_output->state,
     };
     app->telemetry_publisher->publish(telemetry_frame);
     app->logger->push(telemetry_frame);
+}
+
+void ai_state_publish_task(void* context, dfw::common::TimestampUs now_us)
+{
+    auto* app = static_cast<AppContext*>(context);
+    const dfw::estimation::AttitudeState& attitude = app->attitude_estimator->state();
+    const dfw::runtime::Scheduler::SchedulerMode scheduler_mode = app->scheduler->mode();
+
+    dfw::comms::AiStateSnapshotV1 snapshot {};
+    snapshot.timestamp_us = now_us;
+    snapshot.q[0] = attitude.q[0];
+    snapshot.q[1] = attitude.q[1];
+    snapshot.q[2] = attitude.q[2];
+    snapshot.q[3] = attitude.q[3];
+    snapshot.omega_body[0] = app->latest_imu_sample->gyro_rad_s[0];
+    snapshot.omega_body[1] = app->latest_imu_sample->gyro_rad_s[1];
+    snapshot.omega_body[2] = app->latest_imu_sample->gyro_rad_s[2];
+    snapshot.accel_body[0] = app->latest_imu_sample->accel_mps2[0];
+    snapshot.accel_body[1] = app->latest_imu_sample->accel_mps2[1];
+    snapshot.accel_body[2] = app->latest_imu_sample->accel_mps2[2];
+    snapshot.gyro_bias[0] = attitude.gyro_bias_rad_s[0];
+    snapshot.gyro_bias[1] = attitude.gyro_bias_rad_s[1];
+    snapshot.gyro_bias[2] = attitude.gyro_bias_rad_s[2];
+    snapshot.innovation_norm[0] = attitude.innovation_norm_xyz[0];
+    snapshot.innovation_norm[1] = attitude.innovation_norm_xyz[1];
+    snapshot.innovation_norm[2] = attitude.innovation_norm_xyz[2];
+    snapshot.gate_status = attitude.gate_status;
+    snapshot.estimator_lane = attitude.estimator_lane;
+    snapshot.estimator_health = attitude.estimator_health;
+    snapshot.scheduler_mode = static_cast<std::uint8_t>(scheduler_mode);
+    snapshot.alloc_saturated_mask = app->latest_allocator_status->saturated_mask;
+    snapshot.alloc_unallocated[0] = app->latest_allocator_status->unallocated_tau[0];
+    snapshot.alloc_unallocated[1] = app->latest_allocator_status->unallocated_tau[1];
+    snapshot.alloc_unallocated[2] = app->latest_allocator_status->unallocated_tau[2];
+    snapshot.alloc_unallocated[3] = app->latest_allocator_status->unallocated_thrust;
+    snapshot.safety_state = safety_state_flags(*app->latest_safety_output);
+    snapshot.arming_state =
+        app->latest_safety_output->state == dfw::safety::FlightState::armed ? 1U : 0U;
+    snapshot.valid =
+        app->latest_imu_sample->valid &&
+        app->latest_imu_sample->status == dfw::sensing::ImuSampleStatus::ok &&
+        attitude.valid;
+
+    app->ai_state_publisher->publish(snapshot);
 }
 
 void log_flush_task(void* context, dfw::common::TimestampUs now_us)
@@ -593,6 +668,9 @@ int main()
     dfw::comms::AiControlLink ai_control_link {};
     dfw::platform::IUartPort* telemetry_uart =
         hal.buses().create_uart_port(0, dfw::platform::UartConfig {});
+    dfw::platform::IUartPort* ai_state_uart =
+        hal.buses().create_uart_port(1, dfw::platform::UartConfig {});
+    dfw::comms::AiStatePublisher ai_state_publisher {*ai_state_uart};
     dfw::comms::TelemetryPublisher telemetry_publisher {*telemetry_uart};
     SimAppendStorageDevice log_device {};
     dfw::logging::SdLogStorage log_storage {log_device};
@@ -607,6 +685,8 @@ int main()
     dfw::control::AllocatorStatus latest_allocator_status {};
     dfw::safety::SafetyOutput latest_safety_output {};
     dfw::control::PilotCommand pilot_command {};
+    bool latest_ai_link_fresh = false;
+    std::uint8_t latest_authority_fallback_reason = 0U;
     AppContext app_context {
         &hal,
         &scheduler,
@@ -614,6 +694,7 @@ int main()
         &flight_mode_manager,
         &allocator,
         &ai_control_link,
+        &ai_state_publisher,
         &telemetry_publisher,
         &logger,
         &attitude_estimator,
@@ -624,6 +705,8 @@ int main()
         &latest_allocator_status,
         &latest_safety_output,
         &pilot_command,
+        &latest_ai_link_fresh,
+        &latest_authority_fallback_reason,
     };
 
     control_loop.initialize();
@@ -661,6 +744,13 @@ int main()
                               100,
                               &app_context,
                               output_update_task);
+
+    (void) scheduler.add_task("ai_state_publish",
+                              dfw::runtime::Scheduler::PriorityClass::critical_fast,
+                              k_major_cycle_us,
+                              120,
+                              &app_context,
+                              ai_state_publish_task);
 
     (void) scheduler.add_task("telemetry_publish",
                               dfw::runtime::Scheduler::PriorityClass::service_background,

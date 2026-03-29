@@ -84,6 +84,8 @@ SdLogStorage::BinaryLogRecord SdLogStorage::make_record(const comms::TelemetryFr
     record.motors[2] = frame.motor_outputs.values[2];
     record.motors[3] = frame.motor_outputs.values[3];
     record.scheduler_mode = frame.scheduler_mode;
+    record.ai_link_fresh = frame.ai_link_fresh;
+    record.authority_fallback_reason = frame.authority_fallback_reason;
     record.scheduler_skipped_release_count =
         frame.scheduler_runtime.scheduler_skipped_release_count;
     record.scheduler_slack_denial_count =

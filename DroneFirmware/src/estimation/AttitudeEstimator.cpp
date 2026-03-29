@@ -29,6 +29,7 @@ bool AttitudeEstimator::update(const sensing::ImuSample& imu_sample)
     if (!imu_sample.valid || imu_sample.status != sensing::ImuSampleStatus::ok) {
         state_.valid = false;
         state_.dt_s = 0.0f;
+        state_.estimator_health = 2U;
         return false;
     }
 
@@ -67,9 +68,13 @@ bool AttitudeEstimator::update(const sensing::ImuSample& imu_sample)
 
         const float innovation_roll = accel_roll_rad - predicted_roll_rad;
         const float innovation_pitch = accel_pitch_rad - predicted_pitch_rad;
+        state_.innovation_norm_xyz[0] = innovation_roll < 0.0f ? -innovation_roll : innovation_roll;
+        state_.innovation_norm_xyz[1] = innovation_pitch < 0.0f ? -innovation_pitch : innovation_pitch;
+        state_.innovation_norm_xyz[2] = 0.0f;
         state_.innovation_norm = sqrtf_safe(
             innovation_roll * innovation_roll + innovation_pitch * innovation_pitch);
         state_.innovation_gated = state_.innovation_norm > k_innovation_gate_rad;
+        state_.gate_status = state_.innovation_gated ? 0x00U : 0x01U;
 
         if (!state_.innovation_gated) {
             // Small-angle correction using the accelerometer gravity reference.
@@ -98,11 +103,21 @@ bool AttitudeEstimator::update(const sensing::ImuSample& imu_sample)
     } else {
         state_.innovation_norm = 0.0f;
         state_.innovation_gated = true;
+        state_.innovation_norm_xyz[0] = 0.0f;
+        state_.innovation_norm_xyz[1] = 0.0f;
+        state_.innovation_norm_xyz[2] = 0.0f;
+        state_.gate_status = 0x00U;
     }
 
     quaternion_to_euler(q_, state_.roll_rad, state_.pitch_rad, state_.yaw_rad);
+    state_.q[0] = q_.w;
+    state_.q[1] = q_.x;
+    state_.q[2] = q_.y;
+    state_.q[3] = q_.z;
     state_.pitch_rad = clamp(state_.pitch_rad, -k_pi_over_two, k_pi_over_two);
     state_.dt_s = dt_s;
+    state_.estimator_lane = 0U;
+    state_.estimator_health = state_.innovation_gated ? 1U : 0U;
     state_.valid = true;
     return true;
 }

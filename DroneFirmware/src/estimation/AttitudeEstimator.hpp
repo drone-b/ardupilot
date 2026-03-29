@@ -2,14 +2,21 @@
 
 #include "sensing/Sensor.hpp"
 
+#include <cstdint>
+
 namespace dfw::estimation {
 
 struct AttitudeState {
+    float q[4] {1.0f, 0.0f, 0.0f, 0.0f};
     float roll_rad {0.0f};
     float pitch_rad {0.0f};
     float yaw_rad {0.0f};
     float gyro_bias_rad_s[3] {0.0f, 0.0f, 0.0f};
     float innovation_norm {0.0f};
+    float innovation_norm_xyz[3] {0.0f, 0.0f, 0.0f};
+    std::uint8_t gate_status {0};
+    std::uint8_t estimator_lane {0};
+    std::uint8_t estimator_health {0};
     bool innovation_gated {false};
     float dt_s {0.0f};
     bool valid {false};

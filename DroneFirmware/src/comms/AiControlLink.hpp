@@ -6,6 +6,13 @@
 
 namespace dfw::comms {
 
+enum class AiLinkState : std::uint8_t {
+    fresh = 0,
+    missing = 1,
+    stale = 2,
+    future_dated = 3,
+};
+
 struct AiWrenchCommandV1 {
     std::uint16_t version {1};
     std::uint16_t flags {0};
@@ -21,6 +28,9 @@ public:
                        common::TimestampUs now_us,
                        common::DurationUs max_latency_us);
     bool has_fresh_command(common::TimestampUs now_us,
+                           common::DurationUs max_latency_us) const;
+    bool has_command() const;
+    AiLinkState link_state(common::TimestampUs now_us,
                            common::DurationUs max_latency_us) const;
     const AiWrenchCommandV1& latest_wrench() const;
 

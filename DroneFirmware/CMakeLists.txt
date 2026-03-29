@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(drone_firmware
     src/app/main.cpp
     src/comms/AiControlLink.cpp
+    src/comms/AiStatePublisher.cpp
     src/comms/TelemetryPublisher.cpp
     src/config/Parameters.cpp
     src/logging/SdLogStorage.cpp
