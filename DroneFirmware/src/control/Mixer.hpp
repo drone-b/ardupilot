@@ -1,12 +1,9 @@
 #pragma once
 
+#include "control/ControlAllocator.hpp"
 #include "control/ControlLoop.hpp"
 
 namespace dfw::control {
-
-struct MotorOutputs {
-    float values[4] {0.0f, 0.0f, 0.0f, 0.0f};
-};
 
 class Mixer {
 public:

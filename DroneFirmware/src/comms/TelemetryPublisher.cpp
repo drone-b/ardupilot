@@ -60,11 +60,18 @@ TelemetryPublisher::make_binary_frame(const TelemetryFrame& frame, std::uint32_t
         (frame.control_debug.roll.saturated ? 0x01U : 0U) |
         (frame.control_debug.pitch.saturated ? 0x02U : 0U) |
         (frame.control_debug.yaw.saturated ? 0x04U : 0U);
+    packet.debug_reserved[0] =
+        static_cast<std::uint8_t>(frame.allocator_status.saturated_mask & 0xFFU);
+    packet.debug_reserved[1] =
+        static_cast<std::uint8_t>(frame.allocator_status.condition_warning & 0xFFU);
+    packet.debug_reserved[2] =
+        static_cast<std::uint8_t>(frame.allocator_status.solve_iterations & 0xFFU);
     write_float_le(packet.motors_le[0], frame.motor_outputs.values[0]);
     write_float_le(packet.motors_le[1], frame.motor_outputs.values[1]);
     write_float_le(packet.motors_le[2], frame.motor_outputs.values[2]);
     write_float_le(packet.motors_le[3], frame.motor_outputs.values[3]);
     packet.flight_state = static_cast<std::uint8_t>(frame.flight_state);
+    packet.reserved[0] = frame.scheduler_mode;
     return packet;
 }
 

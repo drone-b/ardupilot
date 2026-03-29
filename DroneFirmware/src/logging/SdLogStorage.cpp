@@ -73,6 +73,12 @@ SdLogStorage::BinaryLogRecord SdLogStorage::make_record(const comms::TelemetryFr
         (frame.control_debug.roll.saturated ? 0x01U : 0U) |
         (frame.control_debug.pitch.saturated ? 0x02U : 0U) |
         (frame.control_debug.yaw.saturated ? 0x04U : 0U);
+    record.debug_reserved[0] =
+        static_cast<std::uint8_t>(frame.allocator_status.saturated_mask & 0xFFU);
+    record.debug_reserved[1] =
+        static_cast<std::uint8_t>(frame.allocator_status.condition_warning & 0xFFU);
+    record.debug_reserved[2] =
+        static_cast<std::uint8_t>(frame.allocator_status.solve_iterations & 0xFFU);
     record.motors[0] = frame.motor_outputs.values[0];
     record.motors[1] = frame.motor_outputs.values[1];
     record.motors[2] = frame.motor_outputs.values[2];

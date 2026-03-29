@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common/TimeTypes.hpp"
+#include "control/ControlAllocator.hpp"
 #include "control/ControlLoop.hpp"
-#include "control/Mixer.hpp"
 #include "estimation/AttitudeEstimator.hpp"
 #include "platform/Hal.hpp"
 #include "safety/SafetySupervisor.hpp"
@@ -19,6 +19,8 @@ struct TelemetryFrame {
     control::ControlDemand control_demand {};
     control::ControlLoopDebug control_debug {};
     control::MotorOutputs motor_outputs {};
+    control::AllocatorStatus allocator_status {};
+    std::uint8_t scheduler_mode {0};
     safety::FlightState flight_state {safety::FlightState::disarmed};
 };
 

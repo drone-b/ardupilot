@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(drone_firmware
     src/app/main.cpp
+    src/comms/AiControlLink.cpp
     src/comms/TelemetryPublisher.cpp
     src/config/Parameters.cpp
     src/logging/SdLogStorage.cpp
@@ -16,6 +17,7 @@ add_executable(drone_firmware
     src/control/FlightModeManager.cpp
     src/control/InputMapper.cpp
     src/control/RateController.cpp
+    src/control/ControlAllocator.cpp
     src/control/Mixer.cpp
     src/control/ControlLoop.cpp
     src/safety/SafetySupervisor.cpp

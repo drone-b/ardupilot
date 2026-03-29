@@ -1,7 +1,8 @@
+#include "comms/AiControlLink.hpp"
 #include "comms/TelemetryPublisher.hpp"
+#include "control/ControlAllocator.hpp"
 #include "control/ControlLoop.hpp"
 #include "control/FlightModeManager.hpp"
-#include "control/Mixer.hpp"
 #include "estimation/AttitudeEstimator.hpp"
 #include "logging/Logger.hpp"
 #include "logging/SdLogStorage.hpp"
@@ -18,6 +19,7 @@ namespace {
 
 constexpr dfw::common::DurationUs k_command_timeout_us = 100000;
 constexpr dfw::common::DurationUs k_major_cycle_us = 2000;
+constexpr dfw::common::DurationUs k_ai_command_max_latency_us = 25000;
 
 class SimClock final : public dfw::platform::IClock {
 public:
@@ -343,6 +345,19 @@ dfw::control::PilotCommand make_demo_pilot_command(dfw::common::TimestampUs time
     };
 }
 
+dfw::comms::AiWrenchCommandV1 make_demo_ai_command(dfw::common::TimestampUs timestamp_us)
+{
+    dfw::comms::AiWrenchCommandV1 command {};
+    command.version = 1;
+    command.seq = static_cast<std::uint32_t>(timestamp_us & 0xFFFFFFFFU);
+    command.t_cmd_us = timestamp_us;
+    command.tau[0] = 0.0f;
+    command.tau[1] = 0.0f;
+    command.tau[2] = 0.0f;
+    command.thrust = 0.0f;
+    return command;
+}
+
 bool command_is_fresh(const dfw::control::PilotCommand& command,
                       dfw::common::TimestampUs now_us)
 {
@@ -369,9 +384,11 @@ using FlightLogger = dfw::logging::Logger<32>;
 
 struct AppContext {
     SimHal* hal {nullptr};
+    dfw::runtime::Scheduler* scheduler {nullptr};
     dfw::control::ControlLoop* control_loop {nullptr};
     dfw::control::FlightModeManager* flight_mode_manager {nullptr};
-    dfw::control::Mixer* mixer {nullptr};
+    dfw::control::ControlAllocator* allocator {nullptr};
+    dfw::comms::AiControlLink* ai_control_link {nullptr};
     dfw::comms::TelemetryPublisher* telemetry_publisher {nullptr};
     FlightLogger* logger {nullptr};
     dfw::estimation::AttitudeEstimator* attitude_estimator {nullptr};
@@ -379,6 +396,7 @@ struct AppContext {
     dfw::sensing::SensorManager* sensor_manager {nullptr};
     dfw::sensing::ImuSample* latest_imu_sample {nullptr};
     dfw::control::MotorOutputs* latest_motor_outputs {nullptr};
+    dfw::control::AllocatorStatus* latest_allocator_status {nullptr};
     dfw::safety::SafetyOutput* latest_safety_output {nullptr};
     dfw::control::PilotCommand* pilot_command {nullptr};
 };
@@ -392,8 +410,10 @@ void imu_acquisition_task(void* context, dfw::common::TimestampUs now_us)
 void control_update_task(void* context, dfw::common::TimestampUs now_us)
 {
     auto* app = static_cast<AppContext*>(context);
-    // The demo source refreshes the command every fast-loop cycle, so it does
-    // not intentionally exercise stale-command timeout behavior.
+
+    const dfw::comms::AiWrenchCommandV1 ai_command = make_demo_ai_command(now_us);
+    (void) app->ai_control_link->ingest_wrench(ai_command, now_us, k_ai_command_max_latency_us);
+
     *app->pilot_command = make_demo_pilot_command(now_us);
 
     if (!app->latest_imu_sample->valid ||
@@ -402,20 +422,35 @@ void control_update_task(void* context, dfw::common::TimestampUs now_us)
         return;
     }
 
-    const dfw::control::RateTargetSetpoint rate_target =
-        app->flight_mode_manager->update(*app->pilot_command, app->attitude_estimator->state());
-    if (!rate_target.valid) {
+    dfw::control::MotionTarget target {};
+    bool target_valid = false;
+
+    if (app->ai_control_link->has_fresh_command(now_us, k_ai_command_max_latency_us)) {
+        const dfw::comms::AiWrenchCommandV1& fresh_ai = app->ai_control_link->latest_wrench();
+        // Current control loop is rate-centric; this maps wrench contract into
+        // rate targets as an interim compatibility path.
+        target.roll_rate_target_rad_s = fresh_ai.tau[0];
+        target.pitch_rate_target_rad_s = fresh_ai.tau[1];
+        target.yaw_rate_target_rad_s = fresh_ai.tau[2];
+        target.thrust_target = fresh_ai.thrust;
+        target_valid = true;
+    } else {
+        const dfw::control::RateTargetSetpoint rate_target =
+            app->flight_mode_manager->update(*app->pilot_command, app->attitude_estimator->state());
+        if (rate_target.valid) {
+            target.roll_rate_target_rad_s = rate_target.roll_rate_target_rad_s;
+            target.pitch_rate_target_rad_s = rate_target.pitch_rate_target_rad_s;
+            target.yaw_rate_target_rad_s = rate_target.yaw_rate_target_rad_s;
+            target.thrust_target = rate_target.thrust_target;
+            target_valid = true;
+        }
+    }
+
+    if (!target_valid) {
         return;
     }
 
-    app->control_loop->update(*app->latest_imu_sample,
-                              dfw::control::MotionTarget {
-                                  rate_target.roll_rate_target_rad_s,
-                                  rate_target.pitch_rate_target_rad_s,
-                                  rate_target.yaw_rate_target_rad_s,
-                                  rate_target.thrust_target,
-                              },
-                              now_us);
+    app->control_loop->update(*app->latest_imu_sample, target, now_us);
 }
 
 void estimation_update_task(void* context, dfw::common::TimestampUs now_us)
@@ -435,7 +470,9 @@ void estimation_update_task(void* context, dfw::common::TimestampUs now_us)
 void output_update_task(void* context, dfw::common::TimestampUs now_us)
 {
     auto* app = static_cast<AppContext*>(context);
-    const bool command_valid = command_is_fresh(*app->pilot_command, now_us);
+    const bool command_valid =
+        app->ai_control_link->has_fresh_command(now_us, k_ai_command_max_latency_us) ||
+        command_is_fresh(*app->pilot_command, now_us);
     const bool sensor_valid =
         app->latest_imu_sample->valid &&
         app->latest_imu_sample->status == dfw::sensing::ImuSampleStatus::ok;
@@ -463,8 +500,9 @@ void output_update_task(void* context, dfw::common::TimestampUs now_us)
     }
 
     const dfw::control::ControlDemand& demand = app->control_loop->latest_demand();
-    const dfw::control::MotorOutputs motor_outputs = app->mixer->mix(demand);
+    const dfw::control::MotorOutputs motor_outputs = app->allocator->allocate(demand);
     *app->latest_motor_outputs = motor_outputs;
+    *app->latest_allocator_status = app->allocator->last_status();
 
     for (std::uint8_t motor_index = 0; motor_index < 4; ++motor_index) {
         app->hal->pwm_bank().write_normalized(motor_index, motor_outputs.values[motor_index]);
@@ -481,6 +519,8 @@ void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
         app->control_loop->latest_demand(),
         app->control_loop->latest_debug(),
         *app->latest_motor_outputs,
+        *app->latest_allocator_status,
+        static_cast<std::uint8_t>(app->scheduler->mode()),
         app->latest_safety_output->state,
     };
     app->telemetry_publisher->publish(telemetry_frame);
@@ -502,7 +542,8 @@ int main()
     dfw::runtime::Scheduler scheduler {hal.clock()};
     dfw::control::ControlLoop control_loop {hal};
     dfw::control::FlightModeManager flight_mode_manager {};
-    dfw::control::Mixer mixer {};
+    dfw::control::ControlAllocator allocator {};
+    dfw::comms::AiControlLink ai_control_link {};
     dfw::platform::IUartPort* telemetry_uart =
         hal.buses().create_uart_port(0, dfw::platform::UartConfig {});
     dfw::comms::TelemetryPublisher telemetry_publisher {*telemetry_uart};
@@ -516,13 +557,16 @@ int main()
     ImuIrqContext imu_irq_context {&hal.clock(), &sensor_manager, &scheduler};
     dfw::sensing::ImuSample latest_imu_sample {};
     dfw::control::MotorOutputs latest_motor_outputs {};
+    dfw::control::AllocatorStatus latest_allocator_status {};
     dfw::safety::SafetyOutput latest_safety_output {};
     dfw::control::PilotCommand pilot_command {};
     AppContext app_context {
         &hal,
+        &scheduler,
         &control_loop,
         &flight_mode_manager,
-        &mixer,
+        &allocator,
+        &ai_control_link,
         &telemetry_publisher,
         &logger,
         &attitude_estimator,
@@ -530,6 +574,7 @@ int main()
         &sensor_manager,
         &latest_imu_sample,
         &latest_motor_outputs,
+        &latest_allocator_status,
         &latest_safety_output,
         &pilot_command,
     };
