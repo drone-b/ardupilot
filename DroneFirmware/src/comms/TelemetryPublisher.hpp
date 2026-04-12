@@ -6,6 +6,7 @@
 #include "estimation/AttitudeEstimator.hpp"
 #include "platform/Hal.hpp"
 #include "safety/SafetySupervisor.hpp"
+#include "sensing/PowerMonitor.hpp"
 #include "sensing/Sensor.hpp"
 
 #include <cstdint>
@@ -42,6 +43,7 @@ struct TelemetryFrame {
     common::TimestampUs timestamp_us {0};
     estimation::AttitudeState attitude {};
     sensing::ImuSample imu_sample {};
+    sensing::SensorHealth imu_health {};
     control::ControlDemand control_demand {};
     control::ControlLoopDebug control_debug {};
     control::MotorOutputs motor_outputs {};
@@ -52,14 +54,31 @@ struct TelemetryFrame {
     std::uint32_t authority_transition_count {0};
     common::TimestampUs authority_last_transition_us {0};
     SchedulerRuntimeSnapshot scheduler_runtime {};
+    sensing::PowerSample power_sample {};
     safety::FlightState flight_state {safety::FlightState::disarmed};
+    safety::SafetyBlockReason safety_block_reason {safety::SafetyBlockReason::disarmed};
+    std::uint8_t safety_allow_motor_output {0};
+    std::uint8_t safety_arming_allowed {0};
+    std::uint32_t safety_transition_count {0};
+    common::TimestampUs safety_last_transition_us {0};
 };
 
 class TelemetryPublisher {
 public:
+    struct PublishStats {
+        std::uint32_t attempted_frame_count {0};
+        std::uint32_t accepted_frame_count {0};
+        std::uint32_t busy_frame_count {0};
+        std::uint32_t failed_frame_count {0};
+        std::uint32_t total_write_bytes {0};
+        std::uint16_t last_write_size {0};
+        platform::StatusCode last_status {platform::StatusCode::ok};
+    };
+
     explicit TelemetryPublisher(platform::IUartPort& uart_port);
 
     void publish(const TelemetryFrame& frame);
+    const PublishStats& stats() const;
 
 private:
     struct __attribute__((packed)) BinaryTelemetryFrame {
@@ -82,6 +101,48 @@ private:
         std::uint8_t motors_le[4][4] {};
         std::uint8_t flight_state {0};
         std::uint8_t reserved[3] {0, 0, 0};
+        std::uint8_t authority_transition_count_le[4] {0, 0, 0, 0};
+        std::uint8_t authority_last_transition_us_le[8] {0, 0, 0, 0, 0, 0, 0, 0};
+        std::uint8_t scheduler_skipped_release_count_le[4] {0, 0, 0, 0};
+        std::uint8_t scheduler_slack_denial_count_le[4] {0, 0, 0, 0};
+        std::uint8_t scheduler_mode_transition_count_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_last_us_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_max_us_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_overrun_count_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_skipped_count_le[4] {0, 0, 0, 0};
+        std::uint8_t estimation_last_us_le[4] {0, 0, 0, 0};
+        std::uint8_t estimation_max_us_le[4] {0, 0, 0, 0};
+        std::uint8_t estimation_overrun_count_le[4] {0, 0, 0, 0};
+        std::uint8_t estimation_skipped_count_le[4] {0, 0, 0, 0};
+        std::uint8_t control_last_us_le[4] {0, 0, 0, 0};
+        std::uint8_t control_max_us_le[4] {0, 0, 0, 0};
+        std::uint8_t control_overrun_count_le[4] {0, 0, 0, 0};
+        std::uint8_t control_skipped_count_le[4] {0, 0, 0, 0};
+        std::uint8_t output_last_us_le[4] {0, 0, 0, 0};
+        std::uint8_t output_max_us_le[4] {0, 0, 0, 0};
+        std::uint8_t output_overrun_count_le[4] {0, 0, 0, 0};
+        std::uint8_t output_skipped_count_le[4] {0, 0, 0, 0};
+        std::uint8_t power_sample_time_us_le[8] {0, 0, 0, 0, 0, 0, 0, 0};
+        std::uint8_t power_voltage_v_le[4] {0, 0, 0, 0};
+        std::uint8_t power_current_a_le[4] {0, 0, 0, 0};
+        std::uint8_t power_remaining_ratio_le[4] {0, 0, 0, 0};
+        std::uint8_t power_valid {0};
+        std::uint8_t power_status {0};
+        std::uint8_t power_reserved[2] {0, 0};
+        std::uint8_t imu_health_last_update_us_le[8] {0, 0, 0, 0, 0, 0, 0, 0};
+        std::uint8_t imu_health_total_sample_count_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_health_total_error_count_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_health_consecutive_error_count_le[4] {0, 0, 0, 0};
+        std::uint8_t imu_health_initialized {0};
+        std::uint8_t imu_health_healthy {0};
+        std::uint8_t imu_health_last_status {0};
+        std::uint8_t imu_health_reserved {0};
+        std::uint8_t safety_block_reason {0};
+        std::uint8_t safety_allow_motor_output {0};
+        std::uint8_t safety_arming_allowed {0};
+        std::uint8_t safety_reserved {0};
+        std::uint8_t safety_transition_count_le[4] {0, 0, 0, 0};
+        std::uint8_t safety_last_transition_us_le[8] {0, 0, 0, 0, 0, 0, 0, 0};
     };
 
     struct __attribute__((packed)) BinaryTelemetryHeader {
@@ -107,6 +168,7 @@ private:
 
     platform::IUartPort& uart_port_;
     std::uint32_t sequence_counter_ {0};
+    PublishStats stats_ {};
 };
 
 } // namespace dfw::comms

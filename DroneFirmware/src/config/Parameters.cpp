@@ -10,18 +10,20 @@ constexpr std::uint32_t k_storage_magic = 0x44504657U; // "WFPD"
 constexpr const char* k_storage_file = "droneos-params.bin";
 constexpr const char* k_storage_temp_file = "droneos-params.tmp";
 
-struct StorageHeader {
-    std::uint32_t magic {k_storage_magic};
-    std::uint16_t schema_version {ParameterRegistry::k_schema_version};
-    std::uint16_t parameter_count {static_cast<std::uint16_t>(ParameterId::count)};
-    std::uint32_t checksum {0};
-};
-
 struct StorageParameterEntry {
     std::uint8_t id {0};
     std::uint8_t type {0};
     std::uint16_t reserved {0};
     ParameterValue value {};
+};
+
+struct StorageHeader {
+    std::uint32_t magic {k_storage_magic};
+    std::uint16_t schema_version {ParameterRegistry::k_schema_version};
+    std::uint16_t parameter_count {static_cast<std::uint16_t>(ParameterId::count)};
+    std::uint16_t header_size {sizeof(StorageHeader)};
+    std::uint16_t entry_size {sizeof(StorageParameterEntry)};
+    std::uint32_t checksum {0};
 };
 
 std::uint32_t checksum_parameters(const StorageParameterEntry* entries, std::size_t count)
@@ -187,7 +189,9 @@ bool ParameterRegistry::load_from_storage()
     if (header_read != 1U ||
         header.magic != k_storage_magic ||
         header.schema_version != k_schema_version ||
-        header.parameter_count != static_cast<std::uint16_t>(parameter_count_)) {
+        header.parameter_count != static_cast<std::uint16_t>(parameter_count_) ||
+        header.header_size != sizeof(StorageHeader) ||
+        header.entry_size != sizeof(StorageParameterEntry)) {
         std::fclose(file);
         return false;
     }
@@ -206,20 +210,29 @@ bool ParameterRegistry::load_from_storage()
         return false;
     }
 
+    ParameterValue loaded_values[parameter_count_] {};
     for (std::size_t index = 0; index < parameter_count_; ++index) {
         if (stored_entries[index].id != static_cast<std::uint8_t>(parameters_[index].id) ||
             stored_entries[index].type != static_cast<std::uint8_t>(parameters_[index].type)) {
             return false;
         }
 
-        parameters_[index].value = stored_entries[index].value;
+        if (!value_in_range(parameters_[index], stored_entries[index].value)) {
+            return false;
+        }
+
+        loaded_values[index] = stored_entries[index].value;
+    }
+
+    for (std::size_t index = 0; index < parameter_count_; ++index) {
+        parameters_[index].value = loaded_values[index];
     }
 
     dirty_ = false;
     return true;
 }
 
-bool ParameterRegistry::save_to_storage() const
+bool ParameterRegistry::save_to_storage()
 {
     if (!dirty_) {
         return true;
@@ -260,13 +273,18 @@ bool ParameterRegistry::save_to_storage() const
         return false;
     }
 
-    const_cast<ParameterRegistry*>(this)->dirty_ = false;
+    dirty_ = false;
     return true;
 }
 
 std::uint16_t ParameterRegistry::schema_version() const
 {
     return k_schema_version;
+}
+
+bool ParameterRegistry::dirty() const
+{
+    return dirty_;
 }
 
 const Parameter* ParameterRegistry::parameter(ParameterId id) const
@@ -290,6 +308,23 @@ const Parameter* ParameterRegistry::at(ParameterId id) const
     }
 
     return &parameters_[index_of(id)];
+}
+
+bool ParameterRegistry::value_in_range(const Parameter& parameter, ParameterValue value)
+{
+    switch (parameter.type) {
+    case ParameterType::float32:
+        return value.float32 >= parameter.min_value.float32 &&
+               value.float32 <= parameter.max_value.float32;
+    case ParameterType::int32:
+        return value.int32 >= parameter.min_value.int32 &&
+               value.int32 <= parameter.max_value.int32;
+    case ParameterType::boolean:
+        return value.boolean == parameter.min_value.boolean ||
+               value.boolean == parameter.max_value.boolean;
+    }
+
+    return false;
 }
 
 } // namespace dfw::config

@@ -21,6 +21,8 @@ public:
 
     // Called from periodic control or estimation tasks.
     bool get_latest_imu_sample(ImuSample& out_sample) const;
+    const SensorHealth& imu_health() const;
+    void set_imu_calibration(const ImuCalibration& calibration);
 
 private:
     struct ImuBuffer {
@@ -31,10 +33,16 @@ private:
 
     IImuDevice& imu_device_;
     ImuBuffer imu_buffer_ {};
+    ImuCalibration imu_calibration_ {};
+    SensorHealth imu_health_ {};
     std::atomic<bool> imu_trigger_pending_ {false};
     std::atomic<common::TimestampUs> imu_trigger_time_us_ {0};
     std::uint32_t next_sequence_ {1};
     common::TimestampUs last_published_sample_time_us_ {0};
+
+    void mark_imu_success(common::TimestampUs now_us);
+    void mark_imu_failure(common::TimestampUs now_us, ImuSampleStatus status);
+    void apply_imu_calibration(ImuSample& sample) const;
 };
 
 } // namespace dfw::sensing

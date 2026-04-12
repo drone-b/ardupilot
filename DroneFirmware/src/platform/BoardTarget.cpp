@@ -15,6 +15,32 @@ BoardTargetProfile BoardTargetRegistry::simulation_profile()
     return profile;
 }
 
+BoardTargetProfile BoardTargetRegistry::stm32h743vit_usb_profile()
+{
+    BoardTargetProfile profile {};
+    profile.family = BoardFamily::stm32h7;
+    profile.name = "stm32h743vit_usb";
+    profile.dma_spi = false;
+    profile.dma_uart = false;
+    profile.can_bus = false;
+    profile.sensor_irq_router = false;
+    profile.pwm_channels = 0;
+    return profile;
+}
+
+BoardTargetProfile BoardTargetRegistry::stm32h743vit_reference_profile()
+{
+    BoardTargetProfile profile {};
+    profile.family = BoardFamily::stm32h7;
+    profile.name = "stm32h743vit_reference";
+    profile.dma_spi = false;
+    profile.dma_uart = false;
+    profile.can_bus = false;
+    profile.sensor_irq_router = true;
+    profile.pwm_channels = 8;
+    return profile;
+}
+
 bool BoardTargetRegistry::flight_qualification_ready(const BoardTargetProfile& profile)
 {
     const bool dma_ready = profile.dma_spi && profile.dma_uart;

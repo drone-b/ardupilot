@@ -120,6 +120,15 @@ public:
     virtual void disarm_all() = 0;
 };
 
+class IAnalogInput {
+public:
+    virtual ~IAnalogInput() = default;
+
+    // Bounded ADC read from a scheduler/background context. The returned voltage
+    // is the HAL-calibrated pin/input voltage, not scaled battery-pack voltage.
+    virtual Status read_voltage(float& voltage_v) = 0;
+};
+
 class IBusFactory {
 public:
     virtual ~IBusFactory() = default;
@@ -131,6 +140,7 @@ public:
                                           const I2cDeviceConfig& config) = 0;
     virtual IUartPort* create_uart_port(std::uint8_t port_index,
                                         const UartConfig& config) = 0;
+    virtual IAnalogInput* create_analog_input(std::uint8_t channel_index) = 0;
 };
 
 class IClock {
