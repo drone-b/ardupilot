@@ -42,6 +42,14 @@ enum class MagnetometerSampleStatus : std::uint8_t {
     invalid_temperature
 };
 
+enum class SensorHealthStatus : std::uint8_t {
+    ok = 0,
+    no_data,
+    invalid_timestamp,
+    invalid_sample,
+    transport_error
+};
+
 struct MeasurementFrame {
     common::TimestampUs timestamp_us {};
     SensorKind kind {SensorKind::unknown};
@@ -85,7 +93,7 @@ struct SensorHealth {
     std::uint32_t consecutive_error_count {0};
     bool initialized {false};
     bool healthy {false};
-    ImuSampleStatus last_status {ImuSampleStatus::no_data};
+    SensorHealthStatus last_status {SensorHealthStatus::no_data};
 };
 
 struct BarometerSample {

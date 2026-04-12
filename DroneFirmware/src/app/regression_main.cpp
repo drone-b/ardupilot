@@ -640,9 +640,37 @@ int run_stm32_hal_tests()
     }
 
     dfw::platform::stm32::Stm32ImuDevice imu {spi};
-    dfw::sensing::SensorManager sensor_manager {imu};
+    dfw::sensing::SensorManager sensor_manager {imu, &barometer, &magnetometer};
     if (!sensor_manager.initialize()) {
         std::printf("FAIL stm32_hal: stm32 imu failed to initialize\n");
+        return 1;
+    }
+
+    if (!sensor_manager.acquire_barometer(clock.now_us(), clock.now_us() + 40U) ||
+        !sensor_manager.acquire_magnetometer(clock.now_us(), clock.now_us() + 60U)) {
+        std::printf("FAIL stm32_hal: sensor manager did not acquire slow sensor samples\n");
+        return 1;
+    }
+
+    dfw::sensing::BarometerSample manager_baro_sample {};
+    if (!sensor_manager.get_latest_barometer_sample(manager_baro_sample) ||
+        !manager_baro_sample.valid ||
+        manager_baro_sample.sequence != 1U ||
+        manager_baro_sample.transport_latency_us != 40U ||
+        !sensor_manager.barometer_health().healthy ||
+        sensor_manager.barometer_health().total_sample_count != 1U) {
+        std::printf("FAIL stm32_hal: sensor manager barometer sample invalid\n");
+        return 1;
+    }
+
+    dfw::sensing::MagnetometerSample manager_mag_sample {};
+    if (!sensor_manager.get_latest_magnetometer_sample(manager_mag_sample) ||
+        !manager_mag_sample.valid ||
+        manager_mag_sample.sequence != 1U ||
+        manager_mag_sample.transport_latency_us != 60U ||
+        !sensor_manager.magnetometer_health().healthy ||
+        sensor_manager.magnetometer_health().total_sample_count != 1U) {
+        std::printf("FAIL stm32_hal: sensor manager magnetometer sample invalid\n");
         return 1;
     }
 

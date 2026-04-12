@@ -591,7 +591,7 @@ The next practical development sequence is:
 3. Add persistent parameter storage. (Initial schema-checked binary storage added for host/simulation; future STM32 backend still needed.)
 4. Add STM32 HAL skeleton and one reference board port. (Initial STM32H743VIT reference profile, injectable STM32 timebase contract, separated STM32 simulation backend, timer timebase placeholder, watchdog/reset observability, non-blocking UART FIFO with DMA-burst state/metrics and bounded aggregate service hook, telemetry publish backpressure counters, safe PWM bank, bounded SPI/I2C transfer, fixed-capacity STM32 bus factory validation, sensor IRQ simulation, and separated fake STM32 IMU/barometer/magnetometer paths added; real drivers pending.)
 5. Add IMU calibration and sensor-health state. (Initial IMU bias/scale application and health counters added; calibration procedure still pending.)
-6. Add barometer and magnetometer interfaces. (Initial device/sample contracts added; manager integration and drivers pending.)
+6. Add barometer and magnetometer interfaces. (Initial device/sample contracts added; SensorManager optional acquisition, buffering, sequencing, and health integration added; real drivers pending.)
 7. Add safety event logging. (Initial safety block reason and transition counters added to telemetry/logging.)
 8. Add host simulation harness. (Initial host regression binary covers AI link, scheduler, parameters, power monitor, safety, estimator, allocator, and hardware graph.)
 
