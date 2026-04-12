@@ -23,6 +23,8 @@ struct BoardTargetProfile {
 class BoardTargetRegistry {
 public:
     static BoardTargetProfile simulation_profile();
+    static BoardTargetProfile stm32h743vit_usb_profile();
+    static BoardTargetProfile stm32h743vit_reference_profile();
     static bool flight_qualification_ready(const BoardTargetProfile& profile);
 };
 

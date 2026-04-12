@@ -14,6 +14,7 @@
 #include "platform/Hal.hpp"
 #include "runtime/Scheduler.hpp"
 #include "safety/SafetySupervisor.hpp"
+#include "sensing/PowerMonitor.hpp"
 #include "sensing/SensorManager.hpp"
 
 #include <chrono>
@@ -132,6 +133,23 @@ public:
     }
 };
 
+class SimAnalogInput final : public dfw::platform::IAnalogInput {
+public:
+    explicit SimAnalogInput(float voltage_v) :
+        voltage_v_(voltage_v)
+    {
+    }
+
+    dfw::platform::Status read_voltage(float& voltage_v) override
+    {
+        voltage_v = voltage_v_;
+        return {};
+    }
+
+private:
+    float voltage_v_ {0.0f};
+};
+
 class SimBusFactory final : public dfw::platform::IBusFactory {
 public:
     dfw::platform::ISpiDevice* create_spi_device(std::uint8_t bus_index,
@@ -160,10 +178,25 @@ public:
         return &uart_port_;
     }
 
+    dfw::platform::IAnalogInput* create_analog_input(std::uint8_t channel_index) override
+    {
+        if (channel_index == 0U) {
+            return &battery_voltage_input_;
+        }
+
+        if (channel_index == 1U) {
+            return &battery_current_input_;
+        }
+
+        return nullptr;
+    }
+
 private:
     SimSpiDevice spi_device_ {};
     SimI2cDevice i2c_device_ {};
     SimUartPort uart_port_ {};
+    SimAnalogInput battery_voltage_input_ {1.2f};
+    SimAnalogInput battery_current_input_ {0.5f};
 };
 
 class SimPwmBank final : public dfw::platform::IPwmBank {
@@ -442,7 +475,9 @@ struct AppContext {
     dfw::estimation::AttitudeEstimator* attitude_estimator {nullptr};
     dfw::safety::SafetySupervisor* safety_supervisor {nullptr};
     dfw::sensing::SensorManager* sensor_manager {nullptr};
+    dfw::sensing::PowerMonitor* power_monitor {nullptr};
     dfw::sensing::ImuSample* latest_imu_sample {nullptr};
+    dfw::sensing::PowerSample* latest_power_sample {nullptr};
     dfw::control::MotorOutputs* latest_motor_outputs {nullptr};
     dfw::control::AllocatorStatus* latest_allocator_status {nullptr};
     dfw::safety::SafetyOutput* latest_safety_output {nullptr};
@@ -451,6 +486,10 @@ struct AppContext {
     std::uint8_t* latest_authority_fallback_reason {nullptr};
     std::uint32_t* authority_transition_count {nullptr};
     dfw::common::TimestampUs* authority_last_transition_us {nullptr};
+    dfw::safety::FlightState* previous_safety_state {nullptr};
+    dfw::safety::SafetyBlockReason* previous_safety_block_reason {nullptr};
+    std::uint32_t* safety_transition_count {nullptr};
+    dfw::common::TimestampUs* safety_last_transition_us {nullptr};
 };
 
 std::uint32_t safety_state_flags(const dfw::safety::SafetyOutput& safety)
@@ -575,6 +614,14 @@ void output_update_task(void* context, dfw::common::TimestampUs now_us)
     safety_input.now_us = now_us;
 
     *app->latest_safety_output = app->safety_supervisor->update(safety_input);
+    if (app->latest_safety_output->state != *app->previous_safety_state ||
+        app->latest_safety_output->block_reason != *app->previous_safety_block_reason) {
+        *app->previous_safety_state = app->latest_safety_output->state;
+        *app->previous_safety_block_reason = app->latest_safety_output->block_reason;
+        ++(*app->safety_transition_count);
+        *app->safety_last_transition_us = now_us;
+    }
+
     if (!app->latest_safety_output->allow_motor_output) {
         *app->latest_motor_outputs = {};
         app->hal->pwm_bank().disarm_all();
@@ -591,6 +638,12 @@ void output_update_task(void* context, dfw::common::TimestampUs now_us)
     }
 }
 
+void power_monitor_task(void* context, dfw::common::TimestampUs now_us)
+{
+    auto* app = static_cast<AppContext*>(context);
+    (void) app->power_monitor->sample(now_us, *app->latest_power_sample);
+}
+
 void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
 {
     auto* app = static_cast<AppContext*>(context);
@@ -600,17 +653,24 @@ void telemetry_publish_task(void* context, dfw::common::TimestampUs now_us)
         now_us,
         app->attitude_estimator->state(),
         *app->latest_imu_sample,
+        app->sensor_manager->imu_health(),
         app->control_loop->latest_demand(),
         app->control_loop->latest_debug(),
         *app->latest_motor_outputs,
         *app->latest_allocator_status,
         static_cast<std::uint8_t>(app->scheduler->mode()),
-        *app->latest_ai_link_fresh ? 1U : 0U,
+        static_cast<std::uint8_t>(*app->latest_ai_link_fresh ? 1U : 0U),
         *app->latest_authority_fallback_reason,
         *app->authority_transition_count,
         *app->authority_last_transition_us,
         scheduler_runtime,
+        *app->latest_power_sample,
         app->latest_safety_output->state,
+        app->latest_safety_output->block_reason,
+        static_cast<std::uint8_t>(app->latest_safety_output->allow_motor_output ? 1U : 0U),
+        static_cast<std::uint8_t>(app->latest_safety_output->arming_allowed ? 1U : 0U),
+        *app->safety_transition_count,
+        *app->safety_last_transition_us,
     };
     app->telemetry_publisher->publish(telemetry_frame);
     app->logger->push(telemetry_frame);
@@ -696,10 +756,22 @@ int main()
     dfw::safety::SafetySupervisor safety_supervisor {};
     SimImuDevice imu_device {*hal.buses().create_spi_device(0, 0, {})};
     dfw::sensing::SensorManager sensor_manager {imu_device};
+    dfw::platform::IAnalogInput* battery_voltage_input = hal.buses().create_analog_input(0);
+    dfw::platform::IAnalogInput* battery_current_input = hal.buses().create_analog_input(1);
+    dfw::sensing::PowerMonitorConfig power_monitor_config {};
+    power_monitor_config.voltage_scale = 10.0f;
+    power_monitor_config.current_scale = 20.0f;
+    power_monitor_config.current_offset_v = 0.5f;
+    dfw::sensing::PowerMonitor power_monitor {
+        *battery_voltage_input,
+        *battery_current_input,
+        power_monitor_config,
+    };
     dfw::future::HardwareGraph hardware_graph {};
     dfw::future::DroneFactoryBridge factory_bridge {};
     ImuIrqContext imu_irq_context {&hal.clock(), &sensor_manager, &scheduler};
     dfw::sensing::ImuSample latest_imu_sample {};
+    dfw::sensing::PowerSample latest_power_sample {};
     dfw::control::MotorOutputs latest_motor_outputs {};
     dfw::control::AllocatorStatus latest_allocator_status {};
     dfw::safety::SafetyOutput latest_safety_output {};
@@ -708,6 +780,11 @@ int main()
     std::uint8_t latest_authority_fallback_reason = 0U;
     std::uint32_t authority_transition_count = 0U;
     dfw::common::TimestampUs authority_last_transition_us = 0;
+    dfw::safety::FlightState previous_safety_state = dfw::safety::FlightState::disarmed;
+    dfw::safety::SafetyBlockReason previous_safety_block_reason =
+        dfw::safety::SafetyBlockReason::disarmed;
+    std::uint32_t safety_transition_count = 0U;
+    dfw::common::TimestampUs safety_last_transition_us = 0;
     AppContext app_context {
         &hal,
         &scheduler,
@@ -721,7 +798,9 @@ int main()
         &attitude_estimator,
         &safety_supervisor,
         &sensor_manager,
+        &power_monitor,
         &latest_imu_sample,
+        &latest_power_sample,
         &latest_motor_outputs,
         &latest_allocator_status,
         &latest_safety_output,
@@ -730,6 +809,10 @@ int main()
         &latest_authority_fallback_reason,
         &authority_transition_count,
         &authority_last_transition_us,
+        &previous_safety_state,
+        &previous_safety_block_reason,
+        &safety_transition_count,
+        &safety_last_transition_us,
     };
 
     control_loop.initialize();
@@ -795,6 +878,13 @@ int main()
                               100,
                               &app_context,
                               output_update_task);
+
+    (void) scheduler.add_task("power_monitor",
+                              dfw::runtime::Scheduler::PriorityClass::service_background,
+                              100000,
+                              500,
+                              &app_context,
+                              power_monitor_task);
 
     (void) scheduler.add_task("ai_state_publish",
                               dfw::runtime::Scheduler::PriorityClass::critical_fast,

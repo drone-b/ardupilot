@@ -13,6 +13,11 @@ add_executable(drone_firmware
     src/config/Parameters.cpp
     src/logging/SdLogStorage.cpp
     src/platform/BoardTarget.cpp
+    src/platform/stm32/Stm32BusDevices.cpp
+    src/platform/stm32/Stm32Hal.cpp
+    src/platform/stm32/Stm32SensorDevices.cpp
+    src/platform/stm32/Stm32Sim.cpp
+    src/platform/stm32/Stm32TimerTimebase.cpp
     src/runtime/Scheduler.cpp
     src/estimation/AttitudeEstimator.cpp
     src/control/AttitudeController.cpp
@@ -24,6 +29,7 @@ add_executable(drone_firmware
     src/control/ControlLoop.cpp
     src/safety/SafetySupervisor.cpp
     src/sensing/SensorManager.cpp
+    src/sensing/PowerMonitor.cpp
     src/future/HardwareGraph.cpp
     src/future/DroneFactoryBridge.cpp
 )
@@ -33,9 +39,20 @@ target_include_directories(drone_firmware PRIVATE src)
 add_executable(drone_regression
     src/app/regression_main.cpp
     src/comms/AiControlLink.cpp
+    src/comms/TelemetryPublisher.cpp
+    src/config/Parameters.cpp
     src/control/ControlAllocator.cpp
     src/estimation/AttitudeEstimator.cpp
     src/platform/BoardTarget.cpp
+    src/platform/stm32/Stm32BusDevices.cpp
+    src/platform/stm32/Stm32Hal.cpp
+    src/platform/stm32/Stm32SensorDevices.cpp
+    src/platform/stm32/Stm32Sim.cpp
+    src/platform/stm32/Stm32TimerTimebase.cpp
+    src/runtime/Scheduler.cpp
+    src/safety/SafetySupervisor.cpp
+    src/sensing/SensorManager.cpp
+    src/sensing/PowerMonitor.cpp
     src/future/HardwareGraph.cpp
     src/future/DroneFactoryBridge.cpp
 )

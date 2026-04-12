@@ -16,6 +16,8 @@ For formal specifications (requirements, contracts, ADRs), see [`specification/`
 | [architecture.md](architecture.md) | System overview, subsystem map, execution model — quick orientation for new contributors |
 | [technical-concepts.md](technical-concepts.md) | Deep explanations of every technical concept used in the project (wrench, allocator, ESKF, etc.) |
 | [glossary.md](glossary.md) | Unified domain glossary — vehicle, control, estimation, realtime, communications terms |
+| [DroneOS_master_plan.md](DroneOS_master_plan.md) | Operational development roadmap with milestones, dependencies, risks, and acceptance criteria |
+| [stm32h743vit_usb_bringup.md](stm32h743vit_usb_bringup.md) | Safe USB-only bring-up plan for an STM32H743VIT-class board |
 
 ---
 

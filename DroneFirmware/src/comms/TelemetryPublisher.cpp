@@ -13,18 +13,41 @@ void TelemetryPublisher::publish(const TelemetryFrame& frame)
 {
     const FramedTelemetryPacket packet = make_framed_packet(frame, sequence_counter_);
     ++sequence_counter_;
-    (void) uart_port_.write(reinterpret_cast<const std::uint8_t*>(&packet), sizeof(packet));
+    ++stats_.attempted_frame_count;
+    stats_.last_write_size = static_cast<std::uint16_t>(sizeof(packet));
+
+    const platform::Status status =
+        uart_port_.write(reinterpret_cast<const std::uint8_t*>(&packet), sizeof(packet));
+    stats_.last_status = status.code;
+
+    if (status.success()) {
+        ++stats_.accepted_frame_count;
+        stats_.total_write_bytes += static_cast<std::uint32_t>(sizeof(packet));
+        return;
+    }
+
+    if (status.code == platform::StatusCode::busy) {
+        ++stats_.busy_frame_count;
+        return;
+    }
+
+    ++stats_.failed_frame_count;
+}
+
+const TelemetryPublisher::PublishStats& TelemetryPublisher::stats() const
+{
+    return stats_;
 }
 
 TelemetryPublisher::BinaryTelemetryFrame
 TelemetryPublisher::make_binary_frame(const TelemetryFrame& frame, std::uint32_t sequence)
 {
-    static_assert(sizeof(BinaryTelemetryFrame) == 156,
+    static_assert(sizeof(BinaryTelemetryFrame) == 308,
                   "Binary telemetry frame size must remain fixed");
 
     BinaryTelemetryFrame packet {};
     write_le32(packet.magic_le, 0x44544657U);
-    write_le16(packet.version_le, 1U);
+    write_le16(packet.version_le, 4U);
     write_le16(packet.frame_size_le, static_cast<std::uint16_t>(sizeof(BinaryTelemetryFrame)));
     write_le32(packet.sequence_le, sequence);
     write_le64(packet.timestamp_us_le, static_cast<std::uint64_t>(frame.timestamp_us));
@@ -74,6 +97,57 @@ TelemetryPublisher::make_binary_frame(const TelemetryFrame& frame, std::uint32_t
     packet.reserved[0] = frame.scheduler_mode;
     packet.reserved[1] = frame.ai_link_fresh;
     packet.reserved[2] = frame.authority_fallback_reason;
+    write_le32(packet.authority_transition_count_le, frame.authority_transition_count);
+    write_le64(packet.authority_last_transition_us_le,
+               static_cast<std::uint64_t>(frame.authority_last_transition_us));
+    write_le32(packet.scheduler_skipped_release_count_le,
+               frame.scheduler_runtime.scheduler_skipped_release_count);
+    write_le32(packet.scheduler_slack_denial_count_le,
+               frame.scheduler_runtime.scheduler_slack_denial_count);
+    write_le32(packet.scheduler_mode_transition_count_le,
+               frame.scheduler_runtime.scheduler_mode_transition_count);
+    write_le32(packet.imu_last_us_le, frame.scheduler_runtime.imu_last_us);
+    write_le32(packet.imu_max_us_le, frame.scheduler_runtime.imu_max_us);
+    write_le32(packet.imu_overrun_count_le, frame.scheduler_runtime.imu_overrun_count);
+    write_le32(packet.imu_skipped_count_le, frame.scheduler_runtime.imu_skipped_count);
+    write_le32(packet.estimation_last_us_le, frame.scheduler_runtime.estimation_last_us);
+    write_le32(packet.estimation_max_us_le, frame.scheduler_runtime.estimation_max_us);
+    write_le32(packet.estimation_overrun_count_le,
+               frame.scheduler_runtime.estimation_overrun_count);
+    write_le32(packet.estimation_skipped_count_le,
+               frame.scheduler_runtime.estimation_skipped_count);
+    write_le32(packet.control_last_us_le, frame.scheduler_runtime.control_last_us);
+    write_le32(packet.control_max_us_le, frame.scheduler_runtime.control_max_us);
+    write_le32(packet.control_overrun_count_le,
+               frame.scheduler_runtime.control_overrun_count);
+    write_le32(packet.control_skipped_count_le,
+               frame.scheduler_runtime.control_skipped_count);
+    write_le32(packet.output_last_us_le, frame.scheduler_runtime.output_last_us);
+    write_le32(packet.output_max_us_le, frame.scheduler_runtime.output_max_us);
+    write_le32(packet.output_overrun_count_le, frame.scheduler_runtime.output_overrun_count);
+    write_le32(packet.output_skipped_count_le, frame.scheduler_runtime.output_skipped_count);
+    write_le64(packet.power_sample_time_us_le,
+               static_cast<std::uint64_t>(frame.power_sample.sample_time_us));
+    write_float_le(packet.power_voltage_v_le, frame.power_sample.voltage_v);
+    write_float_le(packet.power_current_a_le, frame.power_sample.current_a);
+    write_float_le(packet.power_remaining_ratio_le, frame.power_sample.remaining_ratio);
+    packet.power_valid = frame.power_sample.valid ? 1U : 0U;
+    packet.power_status = static_cast<std::uint8_t>(frame.power_sample.status);
+    write_le64(packet.imu_health_last_update_us_le,
+               static_cast<std::uint64_t>(frame.imu_health.last_update_us));
+    write_le32(packet.imu_health_total_sample_count_le, frame.imu_health.total_sample_count);
+    write_le32(packet.imu_health_total_error_count_le, frame.imu_health.total_error_count);
+    write_le32(packet.imu_health_consecutive_error_count_le,
+               frame.imu_health.consecutive_error_count);
+    packet.imu_health_initialized = frame.imu_health.initialized ? 1U : 0U;
+    packet.imu_health_healthy = frame.imu_health.healthy ? 1U : 0U;
+    packet.imu_health_last_status = static_cast<std::uint8_t>(frame.imu_health.last_status);
+    packet.safety_block_reason = static_cast<std::uint8_t>(frame.safety_block_reason);
+    packet.safety_allow_motor_output = frame.safety_allow_motor_output;
+    packet.safety_arming_allowed = frame.safety_arming_allowed;
+    write_le32(packet.safety_transition_count_le, frame.safety_transition_count);
+    write_le64(packet.safety_last_transition_us_le,
+               static_cast<std::uint64_t>(frame.safety_last_transition_us));
     return packet;
 }
 
@@ -82,9 +156,9 @@ TelemetryPublisher::make_framed_packet(const TelemetryFrame& frame, std::uint32_
 {
     static_assert(sizeof(BinaryTelemetryHeader) == 8,
                   "Telemetry header size must remain fixed");
-    static_assert(sizeof(BinaryTelemetryFrame) == 156,
+    static_assert(sizeof(BinaryTelemetryFrame) == 308,
                   "Binary telemetry frame size must remain fixed");
-    static_assert(sizeof(FramedTelemetryPacket) == 164,
+    static_assert(sizeof(FramedTelemetryPacket) == 316,
                   "Framed telemetry packet size must remain fixed");
 
     FramedTelemetryPacket packet {};

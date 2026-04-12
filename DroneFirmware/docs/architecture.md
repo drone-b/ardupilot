@@ -83,10 +83,10 @@ residual sleep.
 | `src/control/` | `ControlLoop` (PID rate loop), `ControlAllocator` (wrench → motors) |
 | `src/comms/` | `AiControlLink` (AI command ingress), `TelemetryPublisher` |
 | `src/safety/` | `SafetyManager` — arming preconditions, failsafe state machine |
-| `src/sensing/` | `SensorManager`, `ImuSample`, sensor abstractions |
-| `src/config/` | `Parameters` — typed parameter registry with validated bounds |
+| `src/sensing/` | `SensorManager`, `ImuSample`, `PowerMonitor`, sensor abstractions |
+| `src/config/` | `Parameters` — typed parameter registry with schema-checked persistent storage |
 | `src/logging/` | `SdLogStorage` — binary log records, enqueue-or-discard backpressure |
-| `src/platform/` | `IHal`, `IClock`, `IAppendStorageDevice`, `SimHal` (simulation) |
+| `src/platform/` | `IHal`, `IClock`, board profiles, STM32 HAL skeleton, `SimHal` (simulation) |
 | `src/common/` | `TimestampUs`, `DurationUs`, shared primitive types |
 
 ---
@@ -100,8 +100,12 @@ residual sleep.
 | `MotorOutputs` | `control/ControlAllocator.hpp` | per-motor normalized commands [0..1] |
 | `AllocatorStatus` | `control/ControlAllocator.hpp` | unallocated wrench residual, saturation mask |
 | `AiWrenchCommandV1` | `comms/AiControlLink.hpp` | tau[3] (Nm), thrust (N), seq, timestamp |
-| `TelemetryFrame` | `comms/TelemetryPublisher.hpp` | binary telemetry frame (size static_assert guarded) |
+| `TelemetryFrame` | `comms/TelemetryPublisher.hpp` | fixed-size binary telemetry frame with power and scheduler/runtime observability |
 | `ImuSample` | `sensing/Sensor.hpp` | gyro_rad_s[3], accel_m_s2[3], timestamp_us |
+| `ImuCalibration` | `sensing/Sensor.hpp` | per-axis accelerometer/gyro bias and scale applied before publication |
+| `SensorHealth` | `sensing/Sensor.hpp` | per-sensor health counters, last status, last update timestamp |
+| `BarometerSample` | `sensing/Sensor.hpp` | pressure, temperature, altitude placeholder, timing metadata |
+| `MagnetometerSample` | `sensing/Sensor.hpp` | 3-axis magnetic field sample with timing metadata |
 
 For full binary schemas (ContractHeaderV1, CRC, schema versioning) see
 [`specification/architecture-contracts-v1.md`](../../../DroneFirmware/specification/architecture-contracts-v1.md).
@@ -116,7 +120,7 @@ DroneOS exposes a **wrench-space command interface** to AI agents on a companion
 thrust in N, validated in `AiControlLink::ingest_wrench()`.
 
 **Egress** (FCU → AI): `AiStateSnapshotV1` — full attitude, rates, bias, innovation status,
-allocator saturation, scheduler mode — emitted every cycle (implementation planned).
+allocator saturation, scheduler mode — emitted every cycle.
 
 **Validation on ingress:**
 1. `version == 1`

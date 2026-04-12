@@ -132,6 +132,8 @@ LogMessages.md
 .idea/*
 # CMake
 cmake-build-*/
+/DroneFirmware/build-regression/
+/DroneFirmware/artifacts/
 /reports/
 /GCOV_*.log
 way.txt

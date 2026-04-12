@@ -43,7 +43,7 @@ struct Parameter {
 
 class ParameterRegistry {
 public:
-    static constexpr std::uint16_t k_schema_version = 1;
+    static constexpr std::uint16_t k_schema_version = 2;
 
     static ParameterRegistry& instance();
 
@@ -57,10 +57,10 @@ public:
 
     void reset_to_defaults();
 
-    // Placeholder hooks for future non-volatile storage integration.
     bool load_from_storage();
-    bool save_to_storage() const;
+    bool save_to_storage();
     std::uint16_t schema_version() const;
+    bool dirty() const;
     const Parameter* parameter(ParameterId id) const;
 
 private:
@@ -81,6 +81,7 @@ private:
 
     Parameter* at(ParameterId id);
     const Parameter* at(ParameterId id) const;
+    static bool value_in_range(const Parameter& parameter, ParameterValue value);
 
     Parameter parameters_[parameter_count_] {};
     bool dirty_ {false};
